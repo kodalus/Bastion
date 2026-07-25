@@ -1,3 +1,5 @@
+using Bastion.Application;
+using Bastion.Api.Endpoints;
 using Bastion.Infrastructure;
 using Bastion.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +12,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v1", new() { Title = "Bastion API", Version = "v1" });
 });
 
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddHealthChecks()
@@ -27,6 +30,8 @@ app.UseHttpsRedirection();
 
 app.MapHealthChecks("/health");
 app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
+app.MapLocationEndpoints();
+app.MapSupplyEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

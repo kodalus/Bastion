@@ -1,4 +1,7 @@
+using Bastion.Application.Locations;
+using Bastion.Application.Supplies;
 using Bastion.Infrastructure.Persistence;
+using Bastion.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +19,9 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString));
+
+        services.AddScoped<ILocationRepository, LocationRepository>();
+        services.AddScoped<ISupplyRepository, SupplyRepository>();
 
         return services;
     }
