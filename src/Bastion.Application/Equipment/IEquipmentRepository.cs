@@ -8,6 +8,7 @@ public interface IEquipmentRepository
     Task<Domain.Aggregates.Equipment.Equipment?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<MaintenanceTask>> GetAllTasksByHouseholdAsync(Guid householdId, CancellationToken ct = default);
     Task AddAsync(Domain.Aggregates.Equipment.Equipment equipment, CancellationToken ct = default);
+    void AddTask(MaintenanceTask task);
     Task SaveAsync(CancellationToken ct = default);
     void Remove(Domain.Aggregates.Equipment.Equipment equipment);
 }

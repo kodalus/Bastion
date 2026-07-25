@@ -33,6 +33,8 @@ public class EquipmentRepository(AppDbContext db) : IEquipmentRepository
         await db.SaveChangesAsync(ct);
     }
 
+    public void AddTask(MaintenanceTask task) => db.MaintenanceTasks.Add(task);
+
     public Task SaveAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
 
     public void Remove(Domain.Aggregates.Equipment.Equipment equipment) =>

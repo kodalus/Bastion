@@ -39,7 +39,6 @@ public class Equipment : Entity
     {
         var task = MaintenanceTask.Create(description, intervalDays, Id, PurchaseDate);
         _tasks.Add(task);
-        MarkUpdated();
         return task;
     }
 
@@ -48,7 +47,6 @@ public class Equipment : Entity
         var task = _tasks.FirstOrDefault(t => t.Id == taskId);
         if (task is null) return false;
         _tasks.Remove(task);
-        MarkUpdated();
         return true;
     }
 }

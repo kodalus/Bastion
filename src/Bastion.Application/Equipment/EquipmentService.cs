@@ -64,6 +64,7 @@ public class EquipmentService(IEquipmentRepository repository) : IEquipmentServi
         var eq = await repository.GetByIdAsync(equipmentId, ct);
         if (eq is null) return null;
         var task = eq.AddTask(request.Description, request.IntervalDays);
+        repository.AddTask(task);
         await repository.SaveAsync(ct);
         return ToTaskDto(task);
     }
