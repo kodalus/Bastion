@@ -8,8 +8,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { LocationService } from '../../../core/services/location.service';
 import {
@@ -29,7 +27,7 @@ export interface SupplyFormDialogData {
     CommonModule, ReactiveFormsModule, FormsModule,
     MatDialogModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatButtonModule, MatIconModule,
-    MatDatepickerModule, MatNativeDateModule, MatProgressSpinnerModule
+    MatProgressSpinnerModule
   ],
   template: `
     <h2 mat-dialog-title>{{ data.item ? 'Edytuj zapas' : 'Dodaj zapas' }}</h2>
@@ -105,9 +103,7 @@ export interface SupplyFormDialogData {
 
         <mat-form-field appearance="outline">
           <mat-label>Data ważności</mat-label>
-          <input matInput [matDatepicker]="picker" formControlName="expiryDate" />
-          <mat-datepicker-toggle matSuffix [for]="picker" />
-          <mat-datepicker #picker />
+          <input matInput type="date" formControlName="expiryDate" />
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -172,7 +168,7 @@ export class SupplyFormDialogComponent implements OnInit {
       quantity: [item?.quantity ?? null, [Validators.required, Validators.min(0)]],
       unit: [item?.unit ?? '', Validators.required],
       storageLocationId: [item?.storageLocationId ?? '', Validators.required],
-      expiryDate: [item?.expiryDate ? new Date(item.expiryDate) : null],
+      expiryDate: [item?.expiryDate ?? null],
       estimatedPricePerUnit: [item?.estimatedPricePerUnit ?? null]
     });
   }
@@ -203,13 +199,9 @@ export class SupplyFormDialogComponent implements OnInit {
       quantity: v.quantity,
       unit: v.unit,
       storageLocationId: v.storageLocationId,
-      expiryDate: v.expiryDate ? this.toDateOnly(v.expiryDate) : null,
+      expiryDate: v.expiryDate || null,
       estimatedPricePerUnit: v.estimatedPricePerUnit ?? null
     };
     this.dialogRef.close(request);
-  }
-
-  private toDateOnly(date: Date): string {
-    return date.toISOString().substring(0, 10);
   }
 }
