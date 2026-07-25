@@ -34,10 +34,12 @@ app.UseHttpsRedirection();
 
 app.MapHealthChecks("/health");
 app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
+app.MapHouseholdEndpoints();
 app.MapLocationEndpoints();
 app.MapSupplyEndpoints();
 app.MapTargetEndpoints();
 app.MapDashboardEndpoints();
+app.MapEquipmentEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

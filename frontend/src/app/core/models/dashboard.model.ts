@@ -18,9 +18,20 @@ export interface ShoppingListItem {
   estimatedCost?: number;
 }
 
+export interface OverdueTask {
+  equipmentId: string;
+  equipmentName: string;
+  taskId: string;
+  taskDescription: string;
+  nextDueAt: string;
+  daysOverdue: number;
+}
+
 export interface ReadinessResult {
   overallScore: number;
   memberCount: number;
   categoryScores: CategoryScore[];
   shoppingList: ShoppingListItem[];
+  equipmentScore: number;
+  overdueTasks: OverdueTask[];
 }

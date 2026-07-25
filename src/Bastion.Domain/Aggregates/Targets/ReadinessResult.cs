@@ -5,7 +5,8 @@ namespace Bastion.Domain.Aggregates.Targets;
 public record ReadinessResult(
     int OverallScore,
     IReadOnlyList<CategoryScore> CategoryScores,
-    IReadOnlyList<ShoppingListItem> ShoppingList);
+    IReadOnlyList<ShoppingListItem> ShoppingList,
+    int EquipmentScore);
 
 public record CategoryScore(
     SupplyCategory Category,

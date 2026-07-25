@@ -1,4 +1,5 @@
 using Bastion.Application.Dashboard;
+using Bastion.Application.Equipment;
 using Bastion.Application.Locations;
 using Bastion.Application.Supplies;
 using Bastion.Application.Targets;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ISupplyRepository, SupplyRepository>();
         services.AddScoped<ITargetLevelRepository, TargetLevelRepository>();
         services.AddScoped<IHouseholdRepository, HouseholdRepository>();
+        services.AddScoped<IEquipmentRepository, EquipmentRepository>();
 
         return services;
     }

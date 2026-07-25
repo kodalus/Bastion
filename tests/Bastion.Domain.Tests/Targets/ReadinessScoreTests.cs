@@ -1,3 +1,4 @@
+using Bastion.Domain.Aggregates.Equipment;
 using Bastion.Domain.Aggregates.Supplies;
 using Bastion.Domain.Aggregates.Targets;
 
@@ -240,5 +241,84 @@ public class ReadinessScoreTests
         var target = MakeTarget(SupplyCategory.Water, 3m, 14);
         Assert.Equal(168m, target.RequiredTotal(4));  // 3 × 14 × 4
         Assert.Equal(42m, target.RequiredTotal(1));   // 3 × 14 × 1
+    }
+
+    // --- Equipment score ---
+
+    private static IReadOnlyList<MaintenanceTask> MakeTasks(int overdueCount, int currentCount)
+    {
+        // Overdue: purchased 2 years ago, 90-day interval → BaseDueDate in the past
+        var oldPurchase = new DateOnly(2024, 1, 1);
+        var eq = Equipment.Create("Test", EquipmentCategory.Other, oldPurchase, Guid.NewGuid());
+
+        for (var i = 0; i < overdueCount; i++)
+            eq.AddTask($"Overdue task {i}", 90);
+
+        // Current: completed recently, next due in the future
+        for (var i = 0; i < currentCount; i++)
+        {
+            var task = eq.AddTask($"Current task {i}", 365);
+            task.Complete(new DateOnly(2026, 7, 20)); // NextDueAt = 2027-07-20
+        }
+
+        return eq.Tasks;
+    }
+
+    [Fact]
+    public void NoTasks_EquipmentScore100_NotCountedInOverall()
+    {
+        var target = MakeTarget(SupplyCategory.Water, 3m, 14);
+        var item = MakeItem(SupplyCategory.Water, 84m); // 50% stocked
+
+        var result = ReadinessScoreService.Calculate([item], [target], [], memberCount: 4, Today);
+
+        Assert.Equal(100, result.EquipmentScore);
+        // Overall should equal supply-only weighted score (50%), not affected by equipment
+        Assert.Equal(50, result.OverallScore);
+    }
+
+    [Fact]
+    public void AllTasksCurrent_EquipmentScore100()
+    {
+        var tasks = MakeTasks(overdueCount: 0, currentCount: 3);
+
+        var result = ReadinessScoreService.Calculate([], [], tasks, memberCount: 4, Today);
+
+        Assert.Equal(100, result.EquipmentScore);
+    }
+
+    [Fact]
+    public void AllTasksOverdue_EquipmentScore0()
+    {
+        var tasks = MakeTasks(overdueCount: 4, currentCount: 0);
+
+        var result = ReadinessScoreService.Calculate([], [], tasks, memberCount: 4, Today);
+
+        Assert.Equal(0, result.EquipmentScore);
+    }
+
+    [Fact]
+    public void HalfTasksOverdue_EquipmentScore50()
+    {
+        var tasks = MakeTasks(overdueCount: 2, currentCount: 2);
+
+        var result = ReadinessScoreService.Calculate([], [], tasks, memberCount: 4, Today);
+
+        Assert.Equal(50, result.EquipmentScore);
+    }
+
+    [Fact]
+    public void EquipmentAffectsOverallScore_WhenTasksExist()
+    {
+        // Water (w=3) at 100%. Equipment (w=2) at 0% (all overdue).
+        // Overall = (100×3 + 0×2) / (3+2) = 300/5 = 60
+        var target = MakeTarget(SupplyCategory.Water, 3m, 14);
+        var item = MakeItem(SupplyCategory.Water, 168m); // fully stocked
+        var tasks = MakeTasks(overdueCount: 2, currentCount: 0);
+
+        var result = ReadinessScoreService.Calculate([item], [target], tasks, memberCount: 4, Today);
+
+        Assert.Equal(0, result.EquipmentScore);
+        Assert.Equal(60, result.OverallScore);
     }
 }

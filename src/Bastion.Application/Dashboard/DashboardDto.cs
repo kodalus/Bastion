@@ -7,7 +7,9 @@ public record DashboardDto(
     int OverallScore,
     int MemberCount,
     IReadOnlyList<CategoryScoreDto> CategoryScores,
-    IReadOnlyList<ShoppingListItemDto> ShoppingList);
+    IReadOnlyList<ShoppingListItemDto> ShoppingList,
+    int EquipmentScore,
+    IReadOnlyList<OverdueTaskDto> OverdueTasks);
 
 public record CategoryScoreDto(
     SupplyCategory Category,
@@ -22,3 +24,11 @@ public record ShoppingListItemDto(
     string Unit,
     ShoppingPriority Priority,
     decimal? EstimatedCost);
+
+public record OverdueTaskDto(
+    Guid EquipmentId,
+    string EquipmentName,
+    Guid TaskId,
+    string TaskDescription,
+    DateOnly NextDueAt,
+    int DaysOverdue);

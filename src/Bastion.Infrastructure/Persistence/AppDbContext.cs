@@ -1,3 +1,4 @@
+using Bastion.Domain.Aggregates.Equipment;
 using Bastion.Domain.Aggregates.Households;
 using Bastion.Domain.Aggregates.Locations;
 using Bastion.Domain.Aggregates.Supplies;
@@ -13,6 +14,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<StorageLocation> StorageLocations => Set<StorageLocation>();
     public DbSet<SupplyItem> SupplyItems => Set<SupplyItem>();
     public DbSet<TargetLevel> TargetLevels => Set<TargetLevel>();
+    public DbSet<Domain.Aggregates.Equipment.Equipment> Equipment => Set<Domain.Aggregates.Equipment.Equipment>();
+    public DbSet<MaintenanceTask> MaintenanceTasks => Set<MaintenanceTask>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

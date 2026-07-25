@@ -1,3 +1,4 @@
+using Bastion.Application.Equipment;
 using Bastion.Application.Supplies;
 using Bastion.Application.Targets;
 using Bastion.Domain.Aggregates.Households;
@@ -18,7 +19,8 @@ public interface IHouseholdRepository
 public class DashboardService(
     IHouseholdRepository householdRepository,
     ITargetLevelRepository targetRepository,
-    ISupplyRepository supplyRepository) : IDashboardService
+    ISupplyRepository supplyRepository,
+    IEquipmentRepository equipmentRepository) : IDashboardService
 {
     public async Task<DashboardDto?> GetReadinessAsync(CancellationToken ct = default)
     {
@@ -27,9 +29,22 @@ public class DashboardService(
 
         var targets = await targetRepository.GetByHouseholdAsync(household.Id, ct);
         var supplyItems = await supplyRepository.GetAllAsync(ct);
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var maintenanceTasks = await equipmentRepository.GetAllTasksByHouseholdAsync(household.Id, ct);
+        var allEquipment = await equipmentRepository.GetByHouseholdAsync(household.Id, ct);
 
-        var result = ReadinessScoreService.Calculate(supplyItems, targets, household.MemberCount, today);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var result = ReadinessScoreService.Calculate(supplyItems, targets, maintenanceTasks, household.MemberCount, today);
+
+        // Build overdue task list with equipment names
+        var equipmentById = allEquipment.ToDictionary(e => e.Id);
+        var overdueTasks = allEquipment
+            .SelectMany(e => e.Tasks
+                .Where(t => t.IsOverdue(today))
+                .Select(t => new OverdueTaskDto(
+                    e.Id, e.Name, t.Id, t.Description, t.NextDueAt,
+                    today.DayNumber - t.NextDueAt.DayNumber)))
+            .OrderByDescending(t => t.DaysOverdue)
+            .ToList();
 
         return new DashboardDto(
             result.OverallScore,
@@ -39,6 +54,8 @@ public class DashboardService(
                 .ToList(),
             result.ShoppingList
                 .Select(s => new ShoppingListItemDto(s.Category, s.Gap, s.Unit, s.Priority, s.EstimatedCost))
-                .ToList());
+                .ToList(),
+            result.EquipmentScore,
+            overdueTasks);
     }
 }

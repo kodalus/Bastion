@@ -1,3 +1,4 @@
+using Bastion.Domain.Aggregates.Equipment;
 using Bastion.Domain.Aggregates.Supplies;
 
 namespace Bastion.Domain.Aggregates.Targets;
@@ -6,6 +7,7 @@ public static class ReadinessScoreService
 {
     private const int ExpiringSoonDays = 30;
     private const decimal ExpiringSoonWeight = 0.5m;
+    private const decimal EquipmentWeight = 2m;
 
     private static readonly Dictionary<SupplyCategory, decimal> Weights = new()
     {
@@ -18,14 +20,23 @@ public static class ReadinessScoreService
         [SupplyCategory.Documents] = 0.5m,
     };
 
+    // Overload without maintenance tasks — existing callers and tests unchanged
     public static ReadinessResult Calculate(
         IReadOnlyList<SupplyItem> supplies,
         IReadOnlyList<TargetLevel> targets,
         int memberCount,
+        DateOnly today) =>
+        Calculate(supplies, targets, [], memberCount, today);
+
+    public static ReadinessResult Calculate(
+        IReadOnlyList<SupplyItem> supplies,
+        IReadOnlyList<TargetLevel> targets,
+        IReadOnlyList<MaintenanceTask> maintenanceTasks,
+        int memberCount,
         DateOnly today)
     {
-        if (targets.Count == 0)
-            return new ReadinessResult(0, [], []);
+        if (targets.Count == 0 && maintenanceTasks.Count == 0)
+            return new ReadinessResult(0, [], [], 100);
 
         var categoryScores = new List<CategoryScore>();
         var shoppingList = new List<ShoppingListItem>();
@@ -58,18 +69,29 @@ public static class ReadinessScoreService
                 decimal? estimatedCost = prices.Count > 0 ? gap * prices.Average() : null;
 
                 shoppingList.Add(new ShoppingListItem(
-                    target.Category,
-                    gap,
-                    target.Unit,
-                    GetPriority(target.Category),
-                    estimatedCost));
+                    target.Category, gap, target.Unit, GetPriority(target.Category), estimatedCost));
             }
         }
 
+        // Equipment score: % of tasks not overdue
+        var equipmentScore = maintenanceTasks.Count == 0
+            ? 100
+            : (int)Math.Round(
+                maintenanceTasks.Count(t => !t.IsOverdue(today)) * 100.0 / maintenanceTasks.Count,
+                MidpointRounding.AwayFromZero);
+
+        // Overall: weighted average of supply categories + equipment (only if tasks exist)
         var totalWeight = categoryScores.Sum(c => Weights.GetValueOrDefault(c.Category, 1m));
         var weightedSum = categoryScores.Sum(c => c.Score * Weights.GetValueOrDefault(c.Category, 1m));
+
+        if (maintenanceTasks.Count > 0)
+        {
+            totalWeight += EquipmentWeight;
+            weightedSum += equipmentScore * EquipmentWeight;
+        }
+
         var overallScore = totalWeight == 0
-            ? 0
+            ? equipmentScore
             : (int)Math.Round(weightedSum / totalWeight, MidpointRounding.AwayFromZero);
 
         var sortedShoppingList = shoppingList
@@ -77,7 +99,11 @@ public static class ReadinessScoreService
             .ThenBy(i => i.Category.ToString())
             .ToList();
 
-        return new ReadinessResult(overallScore, categoryScores.AsReadOnly(), sortedShoppingList.AsReadOnly());
+        return new ReadinessResult(
+            overallScore,
+            categoryScores.AsReadOnly(),
+            sortedShoppingList.AsReadOnly(),
+            equipmentScore);
     }
 
     private static ShoppingPriority GetPriority(SupplyCategory category) => category switch

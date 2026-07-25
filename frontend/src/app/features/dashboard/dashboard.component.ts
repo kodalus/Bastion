@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
@@ -8,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { DashboardService } from '../../core/services/dashboard.service';
-import { CategoryScore, ReadinessResult, ShoppingListItem, ShoppingPriority } from '../../core/models/dashboard.model';
+import { ReadinessResult, ShoppingPriority } from '../../core/models/dashboard.model';
 import { CATEGORY_LABELS } from '../../core/models/supply.model';
 
 const PRIORITY_LABELS: Record<ShoppingPriority, string> = {
@@ -21,7 +22,7 @@ const PRIORITY_LABELS: Record<ShoppingPriority, string> = {
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule, DecimalPipe,
+    CommonModule, DecimalPipe, RouterLink,
     MatCardModule, MatProgressBarModule, MatTableModule,
     MatChipsModule, MatIconModule, MatButtonModule, MatDividerModule
   ],
@@ -34,7 +35,7 @@ const PRIORITY_LABELS: Record<ShoppingPriority, string> = {
       }
 
       @if (result(); as r) {
-        <!-- Overall score -->
+        <!-- Score cards -->
         <div class="score-row">
           <mat-card class="score-card" [class]="scoreClass(r.overallScore)">
             <mat-card-content>
@@ -43,7 +44,51 @@ const PRIORITY_LABELS: Record<ShoppingPriority, string> = {
               <div class="score-sub">{{ r.memberCount }} os. · {{ scoreDescription(r.overallScore) }}</div>
             </mat-card-content>
           </mat-card>
+
+          <mat-card class="score-card" [class]="scoreClass(r.equipmentScore)">
+            <mat-card-content>
+              <div class="score-label">Sprzęt i ТО</div>
+              <div class="score-value">{{ r.equipmentScore }}<span class="score-pct">%</span></div>
+              <div class="score-sub">
+                @if (r.overdueTasks.length > 0) {
+                  {{ r.overdueTasks.length }} zadań przeterminowanych
+                } @else {
+                  Wszystko na bieżąco
+                }
+              </div>
+            </mat-card-content>
+          </mat-card>
         </div>
+
+        <!-- Overdue maintenance tasks -->
+        @if (r.overdueTasks.length > 0) {
+          <h2>Przeterminowane przeglądy</h2>
+          <table mat-table [dataSource]="r.overdueTasks" class="shop-table">
+            <ng-container matColumnDef="equipment">
+              <th mat-header-cell *matHeaderCellDef>Sprzęt</th>
+              <td mat-cell *matCellDef="let t">{{ t.equipmentName }}</td>
+            </ng-container>
+            <ng-container matColumnDef="task">
+              <th mat-header-cell *matHeaderCellDef>Zadanie</th>
+              <td mat-cell *matCellDef="let t">{{ t.taskDescription }}</td>
+            </ng-container>
+            <ng-container matColumnDef="due">
+              <th mat-header-cell *matHeaderCellDef>Było wykonać</th>
+              <td mat-cell *matCellDef="let t">{{ t.nextDueAt }}</td>
+            </ng-container>
+            <ng-container matColumnDef="overdue">
+              <th mat-header-cell *matHeaderCellDef>Dni po terminie</th>
+              <td mat-cell *matCellDef="let t"><span class="overdue-days">{{ t.daysOverdue }}</span></td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="overdueColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: overdueColumns;"></tr>
+          </table>
+          <div class="eq-link">
+            <a mat-button color="primary" routerLink="/equipment">
+              <mat-icon>construction</mat-icon> Przejdź do sprzętu
+            </a>
+          </div>
+        }
 
         <!-- Category breakdown -->
         <h2>Zestawienie kategorii</h2>
@@ -80,17 +125,14 @@ const PRIORITY_LABELS: Record<ShoppingPriority, string> = {
                 </mat-chip>
               </td>
             </ng-container>
-
             <ng-container matColumnDef="category">
               <th mat-header-cell *matHeaderCellDef>Kategoria</th>
               <td mat-cell *matCellDef="let item">{{ categoryLabels[item.category] }}</td>
             </ng-container>
-
             <ng-container matColumnDef="gap">
               <th mat-header-cell *matHeaderCellDef>Brakuje</th>
               <td mat-cell *matCellDef="let item">{{ item.gap | number:'1.1-1' }} {{ item.unit }}</td>
             </ng-container>
-
             <ng-container matColumnDef="cost">
               <th mat-header-cell *matHeaderCellDef>Szac. koszt</th>
               <td mat-cell *matCellDef="let item">
@@ -101,7 +143,6 @@ const PRIORITY_LABELS: Record<ShoppingPriority, string> = {
                 }
               </td>
             </ng-container>
-
             <tr mat-header-row *matHeaderRowDef="shopColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: shopColumns;"></tr>
           </table>
@@ -127,7 +168,7 @@ const PRIORITY_LABELS: Record<ShoppingPriority, string> = {
     h1 { font-size: 1.75rem; margin: 0 0 24px; }
     h2 { font-size: 1.2rem; margin: 24px 0 12px; }
 
-    .score-row { display: flex; gap: 16px; margin-bottom: 8px; }
+    .score-row { display: flex; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
     .score-card { min-width: 220px; text-align: center; }
     .score-label { font-size: 0.85rem; color: #666; margin-bottom: 4px; }
     .score-value { font-size: 3.5rem; font-weight: 700; line-height: 1; }
@@ -143,7 +184,6 @@ const PRIORITY_LABELS: Record<ShoppingPriority, string> = {
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 16px;
     }
-    .cat-card { }
     .cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .cat-name { font-weight: 500; font-size: 0.95rem; }
     .cat-score { font-weight: 700; font-size: 1.1rem; }
@@ -156,6 +196,8 @@ const PRIORITY_LABELS: Record<ShoppingPriority, string> = {
     .shop-table { width: 100%; margin-bottom: 24px; }
     td, th { padding: 8px 16px; }
     .no-price { color: #bbb; }
+    .overdue-days { font-weight: 700; color: #c62828; }
+    .eq-link { margin-bottom: 16px; }
 
     .priority-high { background: #ffcdd2 !important; color: #c62828 !important; }
     .priority-medium { background: #ffe0b2 !important; color: #e65100 !important; }
@@ -181,6 +223,7 @@ export class DashboardComponent implements OnInit {
   readonly categoryLabels: { [key: string]: string } = CATEGORY_LABELS;
   readonly priorityLabels: { [key: string]: string } = PRIORITY_LABELS;
   readonly shopColumns = ['priority', 'category', 'gap', 'cost'];
+  readonly overdueColumns = ['equipment', 'task', 'due', 'overdue'];
 
   ngOnInit() { this.load(); }
 
