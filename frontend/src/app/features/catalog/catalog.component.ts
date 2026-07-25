@@ -108,7 +108,9 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
               <mat-label>Domyślne miejsce przechowywania</mat-label>
               <mat-select [(ngModel)]="selectedLocationId">
                 @for (loc of locations(); track loc.id) {
-                  <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
+                  <mat-option [value]="loc.id">
+                    {{ loc.name }}{{ loc.description ? ' – ' + loc.description : '' }}
+                  </mat-option>
                 }
               </mat-select>
               <mat-hint>Zostanie przypisane do wszystkich importowanych pozycji</mat-hint>

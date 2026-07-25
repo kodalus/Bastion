@@ -64,7 +64,9 @@ export interface SupplyFormDialogData {
           <mat-label>Miejsce przechowywania</mat-label>
           <mat-select formControlName="storageLocationId">
             @for (loc of locations; track loc.id) {
-              <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
+              <mat-option [value]="loc.id">
+                {{ loc.name }}{{ loc.description ? ' – ' + loc.description : '' }}
+              </mat-option>
             }
           </mat-select>
         </mat-form-field>

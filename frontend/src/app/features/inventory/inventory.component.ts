@@ -50,7 +50,9 @@ import { SupplyFormDialogComponent } from './supply-form-dialog/supply-form-dial
           <mat-select [(ngModel)]="selectedLocation" (ngModelChange)="applyFilters()">
             <mat-option value="">Wszystkie</mat-option>
             @for (loc of locations(); track loc.id) {
-              <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
+              <mat-option [value]="loc.id">
+                {{ loc.name }}{{ loc.description ? ' – ' + loc.description : '' }}
+              </mat-option>
             }
           </mat-select>
         </mat-form-field>
