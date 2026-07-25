@@ -2,6 +2,7 @@ using Bastion.Application.Dashboard;
 using Bastion.Application.Equipment;
 using Bastion.Application.Locations;
 using Bastion.Application.Notifications;
+using Bastion.Application.Scenarios;
 using Bastion.Application.Supplies;
 using Bastion.Application.Targets;
 using Bastion.Infrastructure.Email;
@@ -33,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IHouseholdRepository, HouseholdRepository>();
         services.AddScoped<IEquipmentRepository, EquipmentRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IScenarioRepository, ScenarioRepository>();
 
         services.Configure<EmailSettings>(configuration.GetSection("Email"));
         services.AddScoped<IEmailService, EmailService>();
