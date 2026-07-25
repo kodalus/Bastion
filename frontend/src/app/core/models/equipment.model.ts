@@ -17,9 +17,9 @@ export interface MaintenanceTaskDto {
   id: string;
   equipmentId: string;
   description: string;
-  intervalDays: number;
+  intervalDays: number | null;
   lastCompletedAt?: string;
-  nextDueAt: string;
+  nextDueAt: string | null;
   isOverdue: boolean;
   isDueSoon: boolean;
 }
@@ -41,5 +41,5 @@ export interface CreateEquipmentRequest {
 
 export interface CreateMaintenanceTaskRequest {
   description: string;
-  intervalDays: number;
+  intervalDays: number | null;
 }

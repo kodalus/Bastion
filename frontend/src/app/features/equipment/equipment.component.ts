@@ -9,12 +9,13 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { EquipmentService } from '../../core/services/equipment.service';
 import {
-  EquipmentCategory, EquipmentDto, EQUIPMENT_CATEGORY_LABELS, MaintenanceTaskDto
+  EquipmentCategory, EquipmentDto, EQUIPMENT_CATEGORY_LABELS
 } from '../../core/models/equipment.model';
 
 const CATEGORIES: EquipmentCategory[] = [
@@ -29,7 +30,8 @@ const CATEGORIES: EquipmentCategory[] = [
     CommonModule, FormsModule,
     MatCardModule, MatButtonModule, MatIconModule, MatChipsModule,
     MatProgressBarModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatDialogModule, MatExpansionModule, MatDividerModule
+    MatSelectModule, MatDialogModule, MatExpansionModule, MatDividerModule,
+    MatTooltipModule
   ],
   template: `
     <div class="eq-container">
@@ -40,9 +42,7 @@ const CATEGORIES: EquipmentCategory[] = [
         </button>
       </div>
 
-      @if (loading()) {
-        <mat-progress-bar mode="indeterminate" />
-      }
+      @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
 
       @if (showAddForm()) {
         <mat-card class="add-card">
@@ -86,33 +86,43 @@ const CATEGORIES: EquipmentCategory[] = [
             <mat-card-header>
               <mat-icon mat-card-avatar>{{ categoryIcon(eq.category) }}</mat-icon>
               <mat-card-title>{{ eq.name }}</mat-card-title>
-              <mat-card-subtitle>
-                {{ catLabels[eq.category] }} · zakupiony {{ eq.purchaseDate }}
-              </mat-card-subtitle>
+              <mat-card-subtitle>{{ catLabels[eq.category] }} · zakupiony {{ eq.purchaseDate }}</mat-card-subtitle>
               <span class="header-spacer"></span>
-              <button mat-icon-button color="warn" (click)="deleteEquipment(eq.id)" class="delete-btn">
+              <button mat-icon-button color="warn" (click)="deleteEquipment(eq.id)" class="delete-btn" matTooltip="Usuń sprzęt">
                 <mat-icon>delete</mat-icon>
               </button>
             </mat-card-header>
 
             <mat-card-content>
               <h4 class="tasks-header">Zadania konserwacyjne</h4>
+
               @for (task of eq.tasks; track task.id) {
-                <div class="task-row" [class.overdue]="task.isOverdue" [class.due-soon]="!task.isOverdue && task.isDueSoon">
+                <div class="task-row"
+                     [class.overdue]="task.isOverdue"
+                     [class.due-soon]="!task.isOverdue && task.isDueSoon"
+                     [class.one-time-done]="!task.intervalDays && !!task.lastCompletedAt">
                   <div class="task-info">
                     <span class="task-desc">{{ task.description }}</span>
                     <span class="task-meta">
-                      Co {{ task.intervalDays }} dni ·
-                      Następny przegląd: {{ task.nextDueAt }}
-                      @if (task.isOverdue) { <mat-chip color="warn" selected>Przeterminowane</mat-chip> }
-                      @else if (task.isDueSoon) { <mat-chip color="accent" selected>Wkrótce</mat-chip> }
+                      @if (task.intervalDays) {
+                        Co {{ task.intervalDays }} dni · Następny: {{ task.nextDueAt ?? '—' }}
+                        @if (task.isOverdue) { <mat-chip color="warn" selected>Przeterminowane</mat-chip> }
+                        @else if (task.isDueSoon) { <mat-chip color="accent" selected>Wkrótce</mat-chip> }
+                      } @else {
+                        <span class="badge-one-time">Jednorazowe</span>
+                        @if (task.lastCompletedAt) {
+                          &nbsp;<mat-chip color="primary" selected>Wykonane {{ task.lastCompletedAt }}</mat-chip>
+                        }
+                      }
                     </span>
                   </div>
                   <div class="task-actions">
-                    <button mat-icon-button color="primary" (click)="completeTask(eq.id, task.id)" title="Oznacz jako wykonane">
-                      <mat-icon>check_circle</mat-icon>
-                    </button>
-                    <button mat-icon-button color="warn" (click)="deleteTask(eq.id, task.id)">
+                    @if (!task.lastCompletedAt || task.intervalDays) {
+                      <button mat-icon-button color="primary" (click)="completeTask(eq.id, task.id)" matTooltip="Oznacz jako wykonane">
+                        <mat-icon>check_circle</mat-icon>
+                      </button>
+                    }
+                    <button mat-icon-button color="warn" (click)="deleteTask(eq.id, task.id)" matTooltip="Usuń">
                       <mat-icon>close</mat-icon>
                     </button>
                   </div>
@@ -125,10 +135,12 @@ const CATEGORIES: EquipmentCategory[] = [
                   <input matInput [(ngModel)]="taskDesc[eq.id]" placeholder="Opis zadania" />
                 </mat-form-field>
                 <mat-form-field appearance="outline" class="task-interval-field">
-                  <mat-label>Dni</mat-label>
-                  <input matInput type="number" [(ngModel)]="taskInterval[eq.id]" min="1" />
+                  <mat-label>Dni (opcjonalnie)</mat-label>
+                  <input matInput type="number" [(ngModel)]="taskIntervalRaw[eq.id]" min="1" placeholder="jednorazowe" />
+                  <mat-hint>puste = jednorazowe</mat-hint>
                 </mat-form-field>
-                <button mat-icon-button color="primary" (click)="addTask(eq.id)" [disabled]="!taskDesc[eq.id]?.trim()">
+                <button mat-icon-button color="primary" (click)="addTask(eq.id)"
+                        [disabled]="!taskDesc[eq.id]?.trim()" matTooltip="Dodaj zadanie">
                   <mat-icon>add</mat-icon>
                 </button>
               </div>
@@ -150,31 +162,30 @@ const CATEGORIES: EquipmentCategory[] = [
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     h1 { font-size: 1.75rem; margin: 0; }
     h4.tasks-header { margin: 12px 0 8px; font-size: 0.95rem; color: #555; }
-
     .add-card { margin-bottom: 24px; }
     .field { width: 100%; margin-bottom: 8px; display: block; }
-
     .eq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
-
     .eq-card mat-card-header { align-items: flex-start; }
     .header-spacer { flex: 1; }
     .delete-btn { margin-top: -8px; }
-
     .task-row {
       display: flex; justify-content: space-between; align-items: center;
       padding: 8px 0; border-bottom: 1px solid #f0f0f0;
     }
     .task-row.overdue { background: #fff5f5; border-radius: 4px; padding: 8px; margin-bottom: 4px; }
     .task-row.due-soon { background: #fff8e1; border-radius: 4px; padding: 8px; margin-bottom: 4px; }
-    .task-info { flex: 1; }
+    .task-row.one-time-done { opacity: 0.65; }
+    .task-info { flex: 1; min-width: 0; }
     .task-desc { display: block; font-weight: 500; font-size: 0.9rem; }
-    .task-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #888; margin-top: 2px; }
-    .task-actions { display: flex; gap: 4px; }
-
-    .add-task-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+    .task-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #888; margin-top: 2px; flex-wrap: wrap; }
+    .badge-one-time {
+      display: inline-block; padding: 2px 8px; border-radius: 12px;
+      background: #e3f2fd; color: #1565c0; font-size: 0.7rem; font-weight: 600;
+    }
+    .task-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .add-task-row { display: flex; align-items: flex-start; gap: 8px; margin-top: 16px; }
     .task-desc-field { flex: 1; }
-    .task-interval-field { width: 80px; }
-
+    .task-interval-field { width: 140px; }
     .error-state { display: flex; align-items: center; gap: 8px; color: #c62828; padding: 16px 0; }
     .empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px 0; color: #888; }
     .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; }
@@ -196,7 +207,7 @@ export class EquipmentComponent implements OnInit {
   newPurchaseDate = new Date().toISOString().split('T')[0];
 
   taskDesc: Record<string, string> = {};
-  taskInterval: Record<string, number> = {};
+  taskIntervalRaw: Record<string, string> = {};
 
   ngOnInit() { this.load(); }
 
@@ -212,33 +223,30 @@ export class EquipmentComponent implements OnInit {
   addEquipment() {
     const req = { name: this.newName.trim(), category: this.newCategory, purchaseDate: this.newPurchaseDate };
     this.svc.create(req).subscribe({
-      next: eq => {
-        this.equipment.update(list => [...list, eq]);
-        this.newName = '';
-        this.showAddForm.set(false);
-      },
+      next: eq => { this.equipment.update(l => [...l, eq]); this.newName = ''; this.showAddForm.set(false); },
       error: () => this.error.set('Nie udało się dodać sprzętu.')
     });
   }
 
   deleteEquipment(id: string) {
     this.svc.delete(id).subscribe({
-      next: () => this.equipment.update(list => list.filter(e => e.id !== id)),
+      next: () => this.equipment.update(l => l.filter(e => e.id !== id)),
       error: () => this.error.set('Nie udało się usunąć sprzętu.')
     });
   }
 
   addTask(equipmentId: string) {
     const desc = this.taskDesc[equipmentId]?.trim();
-    const interval = this.taskInterval[equipmentId] || 365;
     if (!desc) return;
-    this.svc.addTask(equipmentId, { description: desc, intervalDays: interval }).subscribe({
+    const raw = this.taskIntervalRaw[equipmentId];
+    const intervalDays = raw && Number(raw) > 0 ? Math.round(Number(raw)) : null;
+    this.svc.addTask(equipmentId, { description: desc, intervalDays }).subscribe({
       next: task => {
-        this.equipment.update(list => list.map(e =>
+        this.equipment.update(l => l.map(e =>
           e.id === equipmentId ? { ...e, tasks: [...e.tasks, task] } : e
         ));
         this.taskDesc[equipmentId] = '';
-        this.taskInterval[equipmentId] = 365;
+        this.taskIntervalRaw[equipmentId] = '';
       },
       error: () => this.error.set('Nie udało się dodać zadania.')
     });
@@ -247,10 +255,8 @@ export class EquipmentComponent implements OnInit {
   completeTask(equipmentId: string, taskId: string) {
     this.svc.completeTask(equipmentId, taskId).subscribe({
       next: updated => {
-        this.equipment.update(list => list.map(e =>
-          e.id === equipmentId
-            ? { ...e, tasks: e.tasks.map(t => t.id === taskId ? updated : t) }
-            : e
+        this.equipment.update(l => l.map(e =>
+          e.id === equipmentId ? { ...e, tasks: e.tasks.map(t => t.id === taskId ? updated : t) } : e
         ));
       },
       error: () => this.error.set('Nie udało się oznaczyć zadania.')
@@ -260,7 +266,7 @@ export class EquipmentComponent implements OnInit {
   deleteTask(equipmentId: string, taskId: string) {
     this.svc.deleteTask(equipmentId, taskId).subscribe({
       next: () => {
-        this.equipment.update(list => list.map(e =>
+        this.equipment.update(l => l.map(e =>
           e.id === equipmentId ? { ...e, tasks: e.tasks.filter(t => t.id !== taskId) } : e
         ));
       },
@@ -270,14 +276,9 @@ export class EquipmentComponent implements OnInit {
 
   categoryIcon(cat: EquipmentCategory): string {
     const icons: Record<EquipmentCategory, string> = {
-      Generator: 'bolt',
-      Filter: 'water_drop',
-      FireExtinguisher: 'fire_extinguisher',
-      FirstAid: 'medical_services',
-      Tools: 'construction',
-      Vehicle: 'directions_car',
-      Communication: 'radio',
-      Other: 'devices_other',
+      Generator: 'bolt', Filter: 'water_drop', FireExtinguisher: 'fire_extinguisher',
+      FirstAid: 'medical_services', Tools: 'construction', Vehicle: 'directions_car',
+      Communication: 'radio', Other: 'devices_other',
     };
     return icons[cat] ?? 'devices_other';
   }

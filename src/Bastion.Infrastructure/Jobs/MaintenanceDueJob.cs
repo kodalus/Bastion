@@ -46,10 +46,11 @@ public class MaintenanceDueJob(
 
         var rows = string.Join("", dueTasks.Select(x =>
         {
+            var due = x.Task.NextDueAt!.Value;
             var status = x.Task.IsOverdue(today)
-                ? $"<span style='color:red'>PRZETERMINOWANE ({today.DayNumber - x.Task.NextDueAt.DayNumber} dni)</span>"
-                : $"Za {x.Task.NextDueAt.DayNumber - today.DayNumber} dni";
-            return $"<tr><td>{x.Equipment.Name}</td><td>{x.Task.Description}</td><td>{x.Task.NextDueAt:yyyy-MM-dd}</td><td>{status}</td></tr>";
+                ? $"<span style='color:red'>PRZETERMINOWANE ({today.DayNumber - due.DayNumber} dni)</span>"
+                : $"Za {due.DayNumber - today.DayNumber} dni";
+            return $"<tr><td>{x.Equipment.Name}</td><td>{x.Task.Description}</td><td>{due:yyyy-MM-dd}</td><td>{status}</td></tr>";
         }));
 
         var body = $"""

@@ -5,18 +5,16 @@ namespace Bastion.Domain.Aggregates.Equipment;
 public class MaintenanceTask : Entity
 {
     public string Description { get; private set; } = string.Empty;
-    public int IntervalDays { get; private set; }
+    public int? IntervalDays { get; private set; }
     public DateOnly? LastCompletedAt { get; private set; }
     public Guid EquipmentId { get; private set; }
-
-    // First due = PurchaseDate + IntervalDays, stored so entity is self-contained
     public DateOnly BaseDueDate { get; private set; }
 
     private MaintenanceTask() { }
 
     internal static MaintenanceTask Create(
         string description,
-        int intervalDays,
+        int? intervalDays,
         Guid equipmentId,
         DateOnly purchaseDate) =>
         new()
@@ -24,10 +22,10 @@ public class MaintenanceTask : Entity
             Description = description,
             IntervalDays = intervalDays,
             EquipmentId = equipmentId,
-            BaseDueDate = purchaseDate.AddDays(intervalDays)
+            BaseDueDate = intervalDays.HasValue ? purchaseDate.AddDays(intervalDays.Value) : purchaseDate
         };
 
-    public void Update(string description, int intervalDays)
+    public void Update(string description, int? intervalDays)
     {
         Description = description;
         IntervalDays = intervalDays;
@@ -40,10 +38,18 @@ public class MaintenanceTask : Entity
         MarkUpdated();
     }
 
-    public DateOnly NextDueAt => LastCompletedAt?.AddDays(IntervalDays) ?? BaseDueDate;
+    // null for one-time tasks (no interval) — UI shows "—" or "Jednorazowe"
+    public DateOnly? NextDueAt =>
+        IntervalDays.HasValue
+            ? LastCompletedAt?.AddDays(IntervalDays.Value) ?? BaseDueDate
+            : null;
 
-    public bool IsOverdue(DateOnly today) => NextDueAt < today;
+    public bool IsOverdue(DateOnly today) =>
+        IntervalDays.HasValue && NextDueAt.HasValue && NextDueAt.Value < today;
 
     public bool IsDueSoon(DateOnly today, int withinDays = 14) =>
-        !IsOverdue(today) && NextDueAt <= today.AddDays(withinDays);
+        IntervalDays.HasValue
+        && NextDueAt.HasValue
+        && !IsOverdue(today)
+        && NextDueAt.Value <= today.AddDays(withinDays);
 }

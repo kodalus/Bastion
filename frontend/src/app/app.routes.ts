@@ -22,6 +22,14 @@ export const routes: Routes = [
       {
         path: 'scenarios',
         loadComponent: () => import('./features/scenarios/scenarios.component').then(m => m.ScenariosComponent)
+      },
+      {
+        path: 'locations',
+        loadComponent: () => import('./features/locations/locations.component').then(m => m.LocationsComponent)
+      },
+      {
+        path: 'catalog',
+        loadComponent: () => import('./features/catalog/catalog.component').then(m => m.CatalogComponent)
       }
     ]
   }

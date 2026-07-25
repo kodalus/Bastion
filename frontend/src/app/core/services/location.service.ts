@@ -16,6 +16,10 @@ export class LocationService {
     return this.http.post<StorageLocation>(this.base, request);
   }
 
+  update(id: string, request: CreateLocationRequest): Observable<StorageLocation> {
+    return this.http.put<StorageLocation>(`${this.base}/${id}`, request);
+  }
+
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
   }

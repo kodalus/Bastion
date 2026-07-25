@@ -6,9 +6,9 @@ public record MaintenanceTaskDto(
     Guid Id,
     Guid EquipmentId,
     string Description,
-    int IntervalDays,
+    int? IntervalDays,
     DateOnly? LastCompletedAt,
-    DateOnly NextDueAt,
+    DateOnly? NextDueAt,
     bool IsOverdue,
     bool IsDueSoon);
 
@@ -32,8 +32,8 @@ public record UpdateEquipmentRequest(
 
 public record CreateMaintenanceTaskRequest(
     string Description,
-    int IntervalDays);
+    int? IntervalDays);
 
 public record UpdateMaintenanceTaskRequest(
     string Description,
-    int IntervalDays);
+    int? IntervalDays);

@@ -25,6 +25,12 @@ import { MatIconModule } from '@angular/material/icon';
       <a mat-button routerLink="/scenarios" routerLinkActive="active-link">
         <mat-icon>checklist</mat-icon> Scenariusze
       </a>
+      <a mat-button routerLink="/locations" routerLinkActive="active-link">
+        <mat-icon>place</mat-icon> Lokalizacje
+      </a>
+      <a mat-button routerLink="/catalog" routerLinkActive="active-link">
+        <mat-icon>list_alt</mat-icon> Katalog
+      </a>
     </mat-toolbar>
     <main>
       <router-outlet />

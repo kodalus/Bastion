@@ -35,7 +35,7 @@ public class Equipment : Entity
         MarkUpdated();
     }
 
-    public MaintenanceTask AddTask(string description, int intervalDays)
+    public MaintenanceTask AddTask(string description, int? intervalDays)
     {
         var task = MaintenanceTask.Create(description, intervalDays, Id, PurchaseDate);
         _tasks.Add(task);

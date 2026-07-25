@@ -41,8 +41,8 @@ public class DashboardService(
             .SelectMany(e => e.Tasks
                 .Where(t => t.IsOverdue(today))
                 .Select(t => new OverdueTaskDto(
-                    e.Id, e.Name, t.Id, t.Description, t.NextDueAt,
-                    today.DayNumber - t.NextDueAt.DayNumber)))
+                    e.Id, e.Name, t.Id, t.Description, t.NextDueAt!.Value,
+                    today.DayNumber - t.NextDueAt!.Value.DayNumber)))
             .OrderByDescending(t => t.DaysOverdue)
             .ToList();
 
