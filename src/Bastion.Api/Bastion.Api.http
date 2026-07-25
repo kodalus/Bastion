@@ -1,0 +1,6 @@
+@Bastion.Api_HostAddress = http://localhost:5137
+
+GET {{Bastion.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

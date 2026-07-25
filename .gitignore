@@ -427,3 +427,16 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Bastion project-specific
+.env
+appsettings.*.local.json
+appsettings.local.json
+
+# Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# EF migrations bundle
+efbundle
