@@ -1,6 +1,7 @@
 using Bastion.Domain.Aggregates.Equipment;
 using Bastion.Domain.Aggregates.Households;
 using Bastion.Domain.Aggregates.Locations;
+using Bastion.Domain.Aggregates.Notifications;
 using Bastion.Domain.Aggregates.Supplies;
 using Bastion.Domain.Aggregates.Targets;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<TargetLevel> TargetLevels => Set<TargetLevel>();
     public DbSet<Domain.Aggregates.Equipment.Equipment> Equipment => Set<Domain.Aggregates.Equipment.Equipment>();
     public DbSet<MaintenanceTask> MaintenanceTasks => Set<MaintenanceTask>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
