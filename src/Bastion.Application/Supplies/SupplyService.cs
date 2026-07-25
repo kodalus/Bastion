@@ -20,13 +20,13 @@ public class SupplyService(ISupplyRepository repository) : ISupplyService
     public async Task<IReadOnlyList<SupplyItemDto>> GetAllAsync(CancellationToken ct = default)
     {
         var items = await repository.GetAllWithLocationAsync(ct);
-        return items.Select(x => ToDto(x.Item, x.LocationName)).ToList();
+        return items.Select(x => ToDto(x.Item, x.LocationName, x.LocationDesc)).ToList();
     }
 
     public async Task<SupplyItemDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var result = await repository.GetByIdWithLocationAsync(id, ct);
-        return result is null ? null : ToDto(result.Value.Item, result.Value.LocationName);
+        return result is null ? null : ToDto(result.Value.Item, result.Value.LocationName, result.Value.LocationDesc);
     }
 
     public async Task<SupplyItemDto> CreateAsync(CreateSupplyItemRequest request, CancellationToken ct = default)
@@ -36,8 +36,8 @@ public class SupplyService(ISupplyRepository repository) : ISupplyService
             request.Unit, request.StorageLocationId,
             request.ExpiryDate, request.EstimatedPricePerUnit);
         await repository.AddAsync(item, ct);
-        var locationName = await repository.GetLocationNameAsync(item.StorageLocationId, ct);
-        return ToDto(item, locationName);
+        var loc = await repository.GetLocationAsync(item.StorageLocationId, ct);
+        return ToDto(item, loc.Name, loc.Description);
     }
 
     public async Task<SupplyItemDto?> UpdateAsync(Guid id, UpdateSupplyItemRequest request, CancellationToken ct = default)
@@ -48,8 +48,8 @@ public class SupplyService(ISupplyRepository repository) : ISupplyService
             request.Unit, request.StorageLocationId,
             request.ExpiryDate, request.EstimatedPricePerUnit);
         await repository.SaveAsync(ct);
-        var locationName = await repository.GetLocationNameAsync(item.StorageLocationId, ct);
-        return ToDto(item, locationName);
+        var loc = await repository.GetLocationAsync(item.StorageLocationId, ct);
+        return ToDto(item, loc.Name, loc.Description);
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
@@ -60,13 +60,13 @@ public class SupplyService(ISupplyRepository repository) : ISupplyService
         return true;
     }
 
-    private static SupplyItemDto ToDto(SupplyItem item, string locationName)
+    private static SupplyItemDto ToDto(SupplyItem item, string locationName, string? locationDesc)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         return new SupplyItemDto(
             item.Id, item.Name, item.Category,
             item.Quantity, item.Unit,
-            item.StorageLocationId, locationName,
+            item.StorageLocationId, locationName, locationDesc,
             item.ExpiryDate, item.EstimatedPricePerUnit,
             item.AddedAt,
             item.IsExpired(today),
@@ -77,11 +77,11 @@ public class SupplyService(ISupplyRepository repository) : ISupplyService
 public interface ISupplyRepository
 {
     Task<IReadOnlyList<SupplyItem>> GetAllAsync(CancellationToken ct = default);
-    Task<IReadOnlyList<(SupplyItem Item, string LocationName)>> GetAllWithLocationAsync(CancellationToken ct = default);
-    Task<(SupplyItem Item, string LocationName)?> GetByIdWithLocationAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<(SupplyItem Item, string LocationName, string? LocationDesc)>> GetAllWithLocationAsync(CancellationToken ct = default);
+    Task<(SupplyItem Item, string LocationName, string? LocationDesc)?> GetByIdWithLocationAsync(Guid id, CancellationToken ct = default);
     Task<SupplyItem?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task AddAsync(SupplyItem item, CancellationToken ct = default);
     Task RemoveAsync(SupplyItem item, CancellationToken ct = default);
     Task SaveAsync(CancellationToken ct = default);
-    Task<string> GetLocationNameAsync(Guid locationId, CancellationToken ct = default);
+    Task<(string Name, string? Description)> GetLocationAsync(Guid locationId, CancellationToken ct = default);
 }

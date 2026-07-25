@@ -22,6 +22,7 @@ export interface SupplyItem {
   unit: string;
   storageLocationId: string;
   storageLocationName: string;
+  storageLocationDescription: string | null;
   expiryDate: string | null;
   estimatedPricePerUnit: number | null;
   addedAt: string;

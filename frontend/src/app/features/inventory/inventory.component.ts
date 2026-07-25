@@ -84,7 +84,9 @@ import { SupplyFormDialogComponent } from './supply-form-dialog/supply-form-dial
 
         <ng-container matColumnDef="location">
           <th mat-header-cell *matHeaderCellDef>Miejsce</th>
-          <td mat-cell *matCellDef="let item">{{ item.storageLocationName }}</td>
+          <td mat-cell *matCellDef="let item">
+            {{ item.storageLocationName }}{{ item.storageLocationDescription ? ' – ' + item.storageLocationDescription : '' }}
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="expiryDate">

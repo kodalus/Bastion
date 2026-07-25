@@ -10,6 +10,7 @@ public record SupplyItemDto(
     string Unit,
     Guid StorageLocationId,
     string StorageLocationName,
+    string? StorageLocationDescription,
     DateOnly? ExpiryDate,
     decimal? EstimatedPricePerUnit,
     DateTime AddedAt,
