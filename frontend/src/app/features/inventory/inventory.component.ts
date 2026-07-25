@@ -185,6 +185,7 @@ export class InventoryComponent implements OnInit {
     this.dialog.open(SupplyFormDialogComponent, {
       data: { locations: this.locations() }
     }).afterClosed().subscribe(request => {
+      this.reloadLocations();
       if (!request) return;
       this.supplyService.create(request).subscribe({ next: () => { this.load(); this.notify('Dodano zapas'); } });
     });
@@ -194,6 +195,7 @@ export class InventoryComponent implements OnInit {
     this.dialog.open(SupplyFormDialogComponent, {
       data: { item, locations: this.locations() }
     }).afterClosed().subscribe(request => {
+      this.reloadLocations();
       if (!request) return;
       this.supplyService.update(item.id, request).subscribe({ next: () => { this.load(); this.notify('Zapisano zmiany'); } });
     });
@@ -202,6 +204,10 @@ export class InventoryComponent implements OnInit {
   deleteItem(item: SupplyItem) {
     if (!confirm(`Usunąć "${item.name}"?`)) return;
     this.supplyService.delete(item.id).subscribe({ next: () => { this.load(); this.notify('Usunięto'); } });
+  }
+
+  private reloadLocations() {
+    this.locationService.getAll().subscribe(locs => this.locations.set(locs));
   }
 
   private load() {

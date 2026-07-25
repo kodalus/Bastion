@@ -156,6 +156,13 @@ export class SupplyFormDialogComponent implements OnInit {
 
   ngOnInit() {
     this.locations = [...this.data.locations];
+    this.locationSvc.getAll().subscribe(locs => {
+      this.locations = locs;
+      const current = this.form?.get('storageLocationId')?.value;
+      if (current && !locs.some(l => l.id === current)) {
+        this.form?.patchValue({ storageLocationId: '' });
+      }
+    });
     const item = this.data.item;
     this.form = this.fb.group({
       name: [item?.name ?? '', Validators.required],
