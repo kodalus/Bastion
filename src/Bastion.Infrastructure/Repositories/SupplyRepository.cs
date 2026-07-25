@@ -7,6 +7,9 @@ namespace Bastion.Infrastructure.Repositories;
 
 public class SupplyRepository(AppDbContext db) : ISupplyRepository
 {
+    public async Task<IReadOnlyList<SupplyItem>> GetAllAsync(CancellationToken ct = default) =>
+        await db.SupplyItems.ToListAsync(ct);
+
     public async Task<IReadOnlyList<(SupplyItem Item, string LocationName)>> GetAllWithLocationAsync(CancellationToken ct = default) =>
         await db.SupplyItems
             .Join(db.StorageLocations,

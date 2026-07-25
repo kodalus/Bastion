@@ -1,5 +1,7 @@
+using Bastion.Application.Dashboard;
 using Bastion.Application.Locations;
 using Bastion.Application.Supplies;
+using Bastion.Application.Targets;
 using Bastion.Infrastructure.Persistence;
 using Bastion.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +24,8 @@ public static class DependencyInjection
 
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ISupplyRepository, SupplyRepository>();
+        services.AddScoped<ITargetLevelRepository, TargetLevelRepository>();
+        services.AddScoped<IHouseholdRepository, HouseholdRepository>();
 
         return services;
     }

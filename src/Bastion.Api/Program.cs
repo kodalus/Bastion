@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Bastion.Application;
 using Bastion.Api.Endpoints;
 using Bastion.Infrastructure;
@@ -5,6 +6,9 @@ using Bastion.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.ConfigureHttpJsonOptions(o =>
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -32,12 +36,14 @@ app.MapHealthChecks("/health");
 app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 app.MapLocationEndpoints();
 app.MapSupplyEndpoints();
+app.MapTargetEndpoints();
+app.MapDashboardEndpoints();
 
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
+    await DataSeeder.SeedAsync(db);
 }
 
 app.Run();

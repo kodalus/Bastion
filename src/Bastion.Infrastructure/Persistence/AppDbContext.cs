@@ -1,6 +1,7 @@
 using Bastion.Domain.Aggregates.Households;
 using Bastion.Domain.Aggregates.Locations;
 using Bastion.Domain.Aggregates.Supplies;
+using Bastion.Domain.Aggregates.Targets;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bastion.Infrastructure.Persistence;
@@ -11,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Member> Members => Set<Member>();
     public DbSet<StorageLocation> StorageLocations => Set<StorageLocation>();
     public DbSet<SupplyItem> SupplyItems => Set<SupplyItem>();
+    public DbSet<TargetLevel> TargetLevels => Set<TargetLevel>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

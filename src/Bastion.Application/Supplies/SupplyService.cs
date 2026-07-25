@@ -76,6 +76,7 @@ public class SupplyService(ISupplyRepository repository) : ISupplyService
 
 public interface ISupplyRepository
 {
+    Task<IReadOnlyList<SupplyItem>> GetAllAsync(CancellationToken ct = default);
     Task<IReadOnlyList<(SupplyItem Item, string LocationName)>> GetAllWithLocationAsync(CancellationToken ct = default);
     Task<(SupplyItem Item, string LocationName)?> GetByIdWithLocationAsync(Guid id, CancellationToken ct = default);
     Task<SupplyItem?> GetByIdAsync(Guid id, CancellationToken ct = default);
