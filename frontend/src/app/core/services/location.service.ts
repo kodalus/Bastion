@@ -1,26 +1,29 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { from, Observable } from 'rxjs';
 import { CreateLocationRequest, StorageLocation } from '../models/supply.model';
+import { db } from '../db/bastion-db';
 
 @Injectable({ providedIn: 'root' })
 export class LocationService {
-  private readonly http = inject(HttpClient);
-  private readonly base = '/api/locations';
-
   getAll(): Observable<StorageLocation[]> {
-    return this.http.get<StorageLocation[]>(this.base);
+    return from(db.locations.toArray());
   }
 
   create(request: CreateLocationRequest): Observable<StorageLocation> {
-    return this.http.post<StorageLocation>(this.base, request);
+    const record: StorageLocation = {
+      id: crypto.randomUUID(),
+      name: request.name,
+      description: request.description
+    };
+    return from(db.locations.add(record as any).then(() => record));
   }
 
   update(id: string, request: CreateLocationRequest): Observable<StorageLocation> {
-    return this.http.put<StorageLocation>(`${this.base}/${id}`, request);
+    const record: StorageLocation = { id, name: request.name, description: request.description };
+    return from(db.locations.put(record as any).then(() => record));
   }
 
   delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.base}/${id}`);
+    return from(db.locations.delete(id).then(() => undefined as void));
   }
 }
