@@ -83,7 +83,7 @@ public class SupplyItemTests
         var newLocation = Guid.NewGuid();
         var newExpiry = new DateOnly(2028, 6, 1);
 
-        item.Update("Mineral water", SupplyCategory.Water, 20, "L", newLocation, newExpiry, 2.00m);
+        item.Update("Mineral water", SupplyCategory.Water, 20, "L", newLocation, newExpiry, 2.00m, null);
 
         Assert.Equal("Mineral water", item.Name);
         Assert.Equal(20, item.Quantity);
