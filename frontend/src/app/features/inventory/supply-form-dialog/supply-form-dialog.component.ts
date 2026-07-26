@@ -9,11 +9,13 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { LocationService } from '../../../core/services/location.service';
 import {
   CATEGORY_LABELS, CreateSupplyItemRequest,
   StorageLocation, SupplyCategory, SupplyItem, SUPPLY_CATEGORIES
 } from '../../../core/models/supply.model';
+import { CatalogSupplyItem, findCatalogMatch, SUPPLY_CATALOG } from '../../../core/data/supply-catalog.data';
 
 export interface SupplyFormDialogData {
   item?: SupplyItem;
@@ -27,7 +29,7 @@ export interface SupplyFormDialogData {
     CommonModule, ReactiveFormsModule, FormsModule,
     MatDialogModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatButtonModule, MatIconModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule, MatTooltipModule
   ],
   template: `
     <h2 mat-dialog-title>{{ data.item ? 'Edytuj zapas' : 'Dodaj zapas' }}</h2>
@@ -35,7 +37,22 @@ export interface SupplyFormDialogData {
       <form [formGroup]="form" class="supply-form">
         <mat-form-field appearance="outline">
           <mat-label>Nazwa</mat-label>
-          <input matInput formControlName="name" />
+          <input matInput formControlName="name" (blur)="autoSuggestCatalog()" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Rodzic z katalogu</mat-label>
+          <mat-select formControlName="catalogItemName">
+            <mat-option [value]="null">— brak —</mat-option>
+            @for (cat of catalogItems; track cat.name) {
+              <mat-option [value]="cat.name">
+                {{ cat.name }} <span class="cat-hint">({{ categoryLabels[cat.category] }}, {{ cat.suggestedQty }} {{ cat.unit }})</span>
+              </mat-option>
+            }
+          </mat-select>
+          @if (form.get('catalogItemName')?.value) {
+            <mat-hint>Zalecana il.: {{ suggestedQtyForSelected() }} {{ form.get('unit')?.value }}</mat-hint>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -133,6 +150,7 @@ export interface SupplyFormDialogData {
     .new-loc-title { font-size: 0.8rem; font-weight: 600; color: #1565c0; margin-bottom: 4px; }
     .new-loc-actions { display: flex; gap: 8px; align-items: center; }
     mat-spinner { display: inline-block; }
+    .cat-hint { font-size: 0.75rem; color: #888; }
   `]
 })
 export class SupplyFormDialogComponent implements OnInit {
@@ -143,6 +161,7 @@ export class SupplyFormDialogComponent implements OnInit {
 
   readonly categories: SupplyCategory[] = SUPPLY_CATEGORIES;
   readonly categoryLabels = CATEGORY_LABELS;
+  readonly catalogItems: CatalogSupplyItem[] = SUPPLY_CATALOG;
 
   locations: StorageLocation[] = [];
   showLocForm = false;
@@ -164,6 +183,7 @@ export class SupplyFormDialogComponent implements OnInit {
     const item = this.data.item;
     this.form = this.fb.group({
       name: [item?.name ?? '', Validators.required],
+      catalogItemName: [item?.catalogItemName ?? null],
       category: [item?.category ?? 'Food', Validators.required],
       quantity: [item?.quantity ?? null, [Validators.required, Validators.min(0)]],
       unit: [item?.unit ?? '', Validators.required],
@@ -171,6 +191,26 @@ export class SupplyFormDialogComponent implements OnInit {
       expiryDate: [item?.expiryDate ?? null],
       estimatedPricePerUnit: [item?.estimatedPricePerUnit ?? null]
     });
+
+    if (!item) {
+      this.autoSuggestCatalog();
+    }
+  }
+
+  autoSuggestCatalog() {
+    const name: string = this.form.get('name')?.value ?? '';
+    if (!name.trim()) return;
+    if (this.form.get('catalogItemName')?.value) return;
+    const match = findCatalogMatch(name);
+    if (match) {
+      this.form.patchValue({ catalogItemName: match.name });
+    }
+  }
+
+  suggestedQtyForSelected(): number | null {
+    const selected: string = this.form.get('catalogItemName')?.value;
+    if (!selected) return null;
+    return SUPPLY_CATALOG.find(c => c.name === selected)?.suggestedQty ?? null;
   }
 
   addLocation() {
@@ -200,7 +240,8 @@ export class SupplyFormDialogComponent implements OnInit {
       unit: v.unit,
       storageLocationId: v.storageLocationId,
       expiryDate: v.expiryDate || null,
-      estimatedPricePerUnit: v.estimatedPricePerUnit ?? null
+      estimatedPricePerUnit: v.estimatedPricePerUnit ?? null,
+      catalogItemName: v.catalogItemName ?? null
     };
     this.dialogRef.close(request);
   }

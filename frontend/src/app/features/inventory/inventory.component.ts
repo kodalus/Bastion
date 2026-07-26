@@ -16,6 +16,7 @@ import { SupplyService } from '../../core/services/supply.service';
 import { LocationService } from '../../core/services/location.service';
 import { CATEGORY_LABELS, StorageLocation, SupplyCategory, SupplyItem } from '../../core/models/supply.model';
 import { SupplyFormDialogComponent } from './supply-form-dialog/supply-form-dialog.component';
+import { findCatalogMatch } from '../../core/data/supply-catalog.data';
 
 @Component({
   selector: 'app-inventory',
@@ -82,10 +83,34 @@ import { SupplyFormDialogComponent } from './supply-form-dialog/supply-form-dial
           <td mat-cell *matCellDef="let item">{{ item.quantity }} {{ item.unit }}</td>
         </ng-container>
 
+        <ng-container matColumnDef="suggested">
+          <th mat-header-cell *matHeaderCellDef>Zalecana</th>
+          <td mat-cell *matCellDef="let item" class="suggested-cell">
+            @if (suggestedFor(item); as s) {
+              <span [class.below-target]="item.quantity < s" [matTooltip]="item.quantity < s ? 'Poniżej zalecanej ilości' : 'Osiągnięto zalecaną ilość'">
+                {{ s }} {{ item.unit }}
+              </span>
+            } @else {
+              <span style="color:#bbb">—</span>
+            }
+          </td>
+        </ng-container>
+
         <ng-container matColumnDef="location">
           <th mat-header-cell *matHeaderCellDef>Miejsce</th>
           <td mat-cell *matCellDef="let item">
             {{ item.storageLocationName }}{{ item.storageLocationDescription ? ' – ' + item.storageLocationDescription : '' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="price">
+          <th mat-header-cell *matHeaderCellDef>Cena/szt</th>
+          <td mat-cell *matCellDef="let item">
+            @if (priceFor(item) != null) {
+              {{ priceFor(item) | number:'1.2-2' }} zł
+            } @else {
+              <span style="color:#bbb">—</span>
+            }
           </td>
         </ng-container>
 
@@ -140,6 +165,8 @@ import { SupplyFormDialogComponent } from './supply-form-dialog/supply-form-dial
     .status-icon { font-size: 16px; height: 16px; width: 16px; vertical-align: middle; margin-left: 4px; }
     .empty-state { text-align: center; padding: 48px; color: #9e9e9e; }
     td, th { padding: 8px 16px; }
+    .suggested-cell { font-size: 0.85rem; color: #666; }
+    .below-target { color: #e65100; font-weight: 500; }
   `]
 })
 export class InventoryComponent implements OnInit {
@@ -150,7 +177,8 @@ export class InventoryComponent implements OnInit {
 
   readonly categoryLabels: { [key: string]: string } = CATEGORY_LABELS;
   readonly allCategories = Object.keys(CATEGORY_LABELS) as SupplyCategory[];
-  readonly columns = ['name', 'category', 'quantity', 'location', 'expiryDate', 'actions'];
+  readonly columns = ['name', 'category', 'quantity', 'suggested', 'location', 'price', 'expiryDate', 'actions'];
+  private catalogPrices: Record<string, number | null> = {};
 
   private readonly allItems = signal<SupplyItem[]>([]);
   readonly locations = signal<StorageLocation[]>([]);
@@ -171,6 +199,19 @@ export class InventoryComponent implements OnInit {
   ngOnInit() {
     this.load();
     this.locationService.getAll().subscribe(locs => this.locations.set(locs));
+    try {
+      const saved = localStorage.getItem('bastion:catalog:supply:prices');
+      if (saved) this.catalogPrices = JSON.parse(saved);
+    } catch {}
+  }
+
+  priceFor(item: SupplyItem): number | null {
+    return item.estimatedPricePerUnit ?? this.catalogPrices[item.name] ?? null;
+  }
+
+  suggestedFor(item: SupplyItem): number | null {
+    const key = item.catalogItemName ?? item.name;
+    return findCatalogMatch(key)?.suggestedQty ?? null;
   }
 
   applyFilters() {

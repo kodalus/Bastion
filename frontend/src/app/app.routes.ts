@@ -30,6 +30,10 @@ export const routes: Routes = [
       {
         path: 'catalog',
         loadComponent: () => import('./features/catalog/catalog.component').then(m => m.CatalogComponent)
+      },
+      {
+        path: 'equipment-catalog',
+        loadComponent: () => import('./features/equipment-catalog/equipment-catalog.component').then(m => m.EquipmentCatalogComponent)
       }
     ]
   }

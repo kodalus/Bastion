@@ -13,60 +13,13 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { SupplyService } from '../../core/services/supply.service';
 import { LocationService } from '../../core/services/location.service';
 import { CATEGORY_LABELS, StorageLocation, SupplyCategory } from '../../core/models/supply.model';
+import { CatalogSupplyItem, SUPPLY_CATALOG } from '../../core/data/supply-catalog.data';
 
-interface CatalogItem {
-  name: string;
-  category: SupplyCategory;
-  unit: string;
-  suggestedQty: number;
-}
-
-interface CatalogRow extends CatalogItem {
+interface CatalogRow extends CatalogSupplyItem {
   qty: number | null;
+  price: number | null;
   locationId: string;
 }
-
-const CATALOG: CatalogItem[] = [
-  { name: 'Woda mineralna', category: 'Water', unit: 'L', suggestedQty: 42 },
-  { name: 'Tabletki do uzdatniania wody', category: 'Water', unit: 'szt', suggestedQty: 50 },
-  { name: 'Filtr do wody (Brita/BWT)', category: 'Water', unit: 'szt', suggestedQty: 1 },
-  { name: 'Konserwy mięsne', category: 'Food', unit: 'szt', suggestedQty: 20 },
-  { name: 'Konserwy rybne', category: 'Food', unit: 'szt', suggestedQty: 10 },
-  { name: 'Makaron', category: 'Food', unit: 'kg', suggestedQty: 5 },
-  { name: 'Ryż', category: 'Food', unit: 'kg', suggestedQty: 5 },
-  { name: 'Kasza gryczana', category: 'Food', unit: 'kg', suggestedQty: 3 },
-  { name: 'Mąka pszenna', category: 'Food', unit: 'kg', suggestedQty: 3 },
-  { name: 'Cukier', category: 'Food', unit: 'kg', suggestedQty: 2 },
-  { name: 'Sól', category: 'Food', unit: 'kg', suggestedQty: 1 },
-  { name: 'Olej roślinny', category: 'Food', unit: 'L', suggestedQty: 2 },
-  { name: 'Miód', category: 'Food', unit: 'kg', suggestedQty: 1 },
-  { name: 'Herbata', category: 'Food', unit: 'op', suggestedQty: 3 },
-  { name: 'Orzechy i suszone owoce', category: 'Food', unit: 'kg', suggestedQty: 1 },
-  { name: 'Dżem / marmolada', category: 'Food', unit: 'szt', suggestedQty: 4 },
-  { name: 'Bandaże elastyczne', category: 'Medical', unit: 'szt', suggestedQty: 4 },
-  { name: 'Gaza jałowa', category: 'Medical', unit: 'szt', suggestedQty: 10 },
-  { name: 'Plastry (zestaw)', category: 'Medical', unit: 'op', suggestedQty: 2 },
-  { name: 'Środek odkażający (Octenisept)', category: 'Medical', unit: 'szt', suggestedQty: 1 },
-  { name: 'Ibuprofen / Paracetamol', category: 'Medical', unit: 'op', suggestedQty: 2 },
-  { name: 'Rękawice jednorazowe', category: 'Medical', unit: 'par', suggestedQty: 20 },
-  { name: 'Termometr', category: 'Medical', unit: 'szt', suggestedQty: 1 },
-  { name: 'Papier toaletowy', category: 'Hygiene', unit: 'rolki', suggestedQty: 40 },
-  { name: 'Mydło', category: 'Hygiene', unit: 'szt', suggestedQty: 6 },
-  { name: 'Pasta do zębów', category: 'Hygiene', unit: 'szt', suggestedQty: 3 },
-  { name: 'Żel / płyn dezynfekujący do rąk', category: 'Hygiene', unit: 'szt', suggestedQty: 2 },
-  { name: 'Mokre chusteczki', category: 'Hygiene', unit: 'op', suggestedQty: 5 },
-  { name: 'Świece', category: 'Energy', unit: 'szt', suggestedQty: 10 },
-  { name: 'Zapałki', category: 'Energy', unit: 'szt', suggestedQty: 5 },
-  { name: 'Latarka LED', category: 'Energy', unit: 'szt', suggestedQty: 2 },
-  { name: 'Baterie AA', category: 'Energy', unit: 'szt', suggestedQty: 12 },
-  { name: 'Powerbank', category: 'Energy', unit: 'szt', suggestedQty: 1 },
-  { name: 'Nóż wielofunkcyjny', category: 'Tools', unit: 'szt', suggestedQty: 1 },
-  { name: 'Lina (10 m)', category: 'Tools', unit: 'szt', suggestedQty: 1 },
-  { name: 'Taśma klejąca / duct tape', category: 'Tools', unit: 'szt', suggestedQty: 2 },
-  { name: 'Radio na baterie', category: 'Tools', unit: 'szt', suggestedQty: 1 },
-  { name: 'Kopie dokumentów (wodoszczelne opakowanie)', category: 'Documents', unit: 'kpl', suggestedQty: 1 },
-  { name: 'Gotówka awaryjna', category: 'Documents', unit: 'kpl', suggestedQty: 1 },
-];
 
 const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene', 'Energy', 'Tools', 'Documents'];
 
@@ -94,19 +47,6 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
       <mat-card class="controls-card">
         <mat-card-content>
           <div class="controls-row">
-            <mat-form-field appearance="outline" class="loc-field">
-              <mat-label>Ustaw miejsce dla wszystkich wierszy</mat-label>
-              <mat-select [(ngModel)]="defaultLocationId" (ngModelChange)="applyDefaultLocation($event)">
-                <mat-option value="">— nie zmieniaj —</mat-option>
-                @for (loc of locations(); track loc.id) {
-                  <mat-option [value]="loc.id">
-                    {{ loc.name }}{{ loc.description ? ' – ' + loc.description : '' }}
-                  </mat-option>
-                }
-              </mat-select>
-              <mat-hint>Zastosuje wybrane miejsce do wszystkich wierszy naraz</mat-hint>
-            </mat-form-field>
-
             <div class="action-buttons">
               <button mat-button (click)="prefillSuggested()">
                 <mat-icon>auto_fix_high</mat-icon> Sugerowane ilości
@@ -131,6 +71,13 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
             <mat-card-title class="cat-title">
               <span [class]="'cat-dot cat-' + cat.toLowerCase()"></span>
               {{ catLabels[cat] }}
+              <select class="cat-loc-select" [(ngModel)]="defaultLocationIds[cat]"
+                      (ngModelChange)="applyDefaultLocation(cat, $event)">
+                <option value="">— miejsce dla kategorii —</option>
+                @for (loc of locations(); track loc.id) {
+                  <option [value]="loc.id">{{ loc.name }}{{ loc.description ? ' – ' + loc.description : '' }}</option>
+                }
+              </select>
             </mat-card-title>
           </mat-card-header>
           <mat-card-content>
@@ -141,6 +88,7 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
                   <th class="col-unit">Jed.</th>
                   <th class="col-suggested">Sugerowana</th>
                   <th class="col-qty">Stan</th>
+                  <th class="col-price">Cena/szt</th>
                   <th class="col-loc">Miejsce</th>
                 </tr>
               </thead>
@@ -161,12 +109,24 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
                         [class.filled]="row.qty !== null"
                       />
                     </td>
+                    <td class="col-price">
+                      <input
+                        type="number"
+                        class="qty-input price-input"
+                        [(ngModel)]="row.price"
+                        (ngModelChange)="savePrice(row.name, $event)"
+                        placeholder="—"
+                        min="0"
+                        step="0.01"
+                        [class.filled]="row.price !== null"
+                      />
+                    </td>
                     <td class="col-loc">
                       <select class="loc-select" [(ngModel)]="row.locationId"
                               [class.no-loc]="!row.locationId">
                         <option value="">—</option>
                         @for (loc of locations(); track loc.id) {
-                          <option [value]="loc.id">{{ loc.name }}</option>
+                          <option [value]="loc.id">{{ loc.name }}{{ loc.description ? ' – ' + loc.description : '' }}</option>
                         }
                       </select>
                     </td>
@@ -199,7 +159,13 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
     .action-buttons { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-top: 4px; }
 
     .cat-card { margin-bottom: 16px; }
-    .cat-title { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+    .cat-title { display: flex; align-items: center; gap: 8px; font-size: 1rem; flex-wrap: wrap; }
+    .cat-loc-select {
+      margin-left: auto; padding: 3px 6px; border: 1px solid #ccc; border-radius: 6px;
+      font-size: 0.78rem; outline: none; background: white; cursor: pointer; color: #444;
+      max-width: 220px;
+    }
+    .cat-loc-select:focus { border-color: #1976d2; }
     .cat-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
     .cat-dot.cat-water { background: #1565c0; }
     .cat-dot.cat-food { background: #2e7d32; }
@@ -218,11 +184,13 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
     .cat-table tr:last-child td { border-bottom: none; }
     .cat-table tr.has-value { background: #f0f7ff; }
 
-    .col-name { width: 38%; }
-    .col-unit { width: 7%; color: #666; font-size: 0.8rem; }
-    .col-suggested { width: 10%; color: #888; font-size: 0.82rem; text-align: right; }
-    .col-qty { width: 13%; }
+    .col-name { width: 32%; }
+    .col-unit { width: 6%; color: #666; font-size: 0.8rem; }
+    .col-suggested { width: 8%; color: #888; font-size: 0.82rem; text-align: right; }
+    .col-qty { width: 11%; }
+    .col-price { width: 11%; }
     .col-loc { width: 32%; }
+    .price-input { width: 80px; }
 
     .qty-input {
       width: 80px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 6px;
@@ -259,9 +227,9 @@ export class CatalogComponent implements OnInit {
   readonly catLabels = CATEGORY_LABELS;
   readonly categoryOrder = CATEGORY_ORDER;
 
-  defaultLocationId = '';
+  defaultLocationIds: Partial<Record<SupplyCategory, string>> = {};
 
-  rows: CatalogRow[] = CATALOG.map(item => ({ ...item, qty: null, locationId: '' }));
+  rows: CatalogRow[] = SUPPLY_CATALOG.map(item => ({ ...item, qty: null, price: null, locationId: '' }));
 
   get importCount(): number {
     return this.rows.filter(r => r.qty !== null && r.locationId).length;
@@ -280,19 +248,38 @@ export class CatalogComponent implements OnInit {
     return map as Record<SupplyCategory, CatalogRow[]>;
   }
 
+  private readonly PRICE_KEY = 'bastion:catalog:supply:prices';
+
   ngOnInit() {
-    this.locationSvc.getAll().subscribe(locs => {
-      this.locations.set(locs);
-      if (locs.length > 0) {
-        this.defaultLocationId = locs[0].id;
-        this.applyDefaultLocation(locs[0].id);
-      }
-    });
+    this.locationSvc.getAll().subscribe(locs => this.locations.set(locs));
+    this.loadSavedPrices();
   }
 
-  applyDefaultLocation(locId: string) {
+  private loadSavedPrices() {
+    try {
+      const saved = localStorage.getItem(this.PRICE_KEY);
+      if (!saved) return;
+      const prices: Record<string, number | null> = JSON.parse(saved);
+      for (const row of this.rows) {
+        if (row.name in prices) row.price = prices[row.name];
+      }
+    } catch {}
+  }
+
+  savePrice(name: string, price: number | null) {
+    try {
+      const saved = localStorage.getItem(this.PRICE_KEY);
+      const prices: Record<string, number | null> = saved ? JSON.parse(saved) : {};
+      prices[name] = price;
+      localStorage.setItem(this.PRICE_KEY, JSON.stringify(prices));
+    } catch {}
+  }
+
+  applyDefaultLocation(cat: SupplyCategory, locId: string) {
     if (!locId) return;
-    for (const row of this.rows) row.locationId = locId;
+    for (const row of this.rows) {
+      if (row.category === cat) row.locationId = locId;
+    }
   }
 
   prefillSuggested() {
@@ -306,42 +293,56 @@ export class CatalogComponent implements OnInit {
   }
 
   importSelected() {
-    const toImport = this.rows.filter(r => r.qty !== null && r.locationId);
-    if (toImport.length === 0) return;
+    const candidates = this.rows.filter(r => r.qty !== null && r.locationId);
+    if (candidates.length === 0) return;
 
     this.saving.set(true);
-    let done = 0;
-    let errors = 0;
+    this.supplySvc.getAll().subscribe(existing => {
+      const existingNames = new Set(existing.map(e => e.name.toLowerCase()));
+      const toImport = candidates.filter(r => !existingNames.has(r.name.toLowerCase()));
+      const skipped = candidates.length - toImport.length;
 
-    for (const row of toImport) {
-      this.supplySvc.create({
-        name: row.name,
-        category: row.category,
-        quantity: row.qty ?? 0,
-        unit: row.unit,
-        storageLocationId: row.locationId,
-        expiryDate: null,
-        estimatedPricePerUnit: null
-      }).subscribe({
-        next: () => {
-          done++;
-          if (done + errors === toImport.length) this.finish(done, errors);
-        },
-        error: () => {
-          errors++;
-          if (done + errors === toImport.length) this.finish(done, errors);
-        }
-      });
-    }
+      if (toImport.length === 0) {
+        this.saving.set(false);
+        this.snackBar.open(`Wszystkie wybrane pozycje już istnieją w zapasach (pominięto: ${skipped})`, 'OK', { duration: 5000 });
+        return;
+      }
+
+      let done = 0;
+      let errors = 0;
+
+      for (const row of toImport) {
+        this.supplySvc.create({
+          name: row.name,
+          category: row.category,
+          quantity: row.qty ?? 0,
+          unit: row.unit,
+          storageLocationId: row.locationId,
+          expiryDate: null,
+          estimatedPricePerUnit: row.price,
+          catalogItemName: row.name
+        }).subscribe({
+          next: () => {
+            done++;
+            if (done + errors === toImport.length) this.finish(done, errors, skipped);
+          },
+          error: () => {
+            errors++;
+            if (done + errors === toImport.length) this.finish(done, errors, skipped);
+          }
+        });
+      }
+    });
   }
 
-  private finish(done: number, errors: number) {
+  private finish(done: number, errors: number, skipped = 0) {
     this.saving.set(false);
+    const skipMsg = skipped > 0 ? `, pominięto duplikatów: ${skipped}` : '';
     if (errors === 0) {
-      this.snackBar.open(`Zaimportowano ${done} pozycji`, 'OK', { duration: 4000 });
+      this.snackBar.open(`Zaimportowano ${done} pozycji${skipMsg}`, 'OK', { duration: 4000 });
       this.clearAll();
     } else {
-      this.snackBar.open(`Zaimportowano ${done}, błędy: ${errors}`, 'OK', { duration: 5000 });
+      this.snackBar.open(`Zaimportowano ${done}, błędy: ${errors}${skipMsg}`, 'OK', { duration: 5000 });
     }
   }
 }

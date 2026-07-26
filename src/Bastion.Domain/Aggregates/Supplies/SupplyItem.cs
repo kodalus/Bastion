@@ -11,6 +11,7 @@ public class SupplyItem : Entity
     public Guid StorageLocationId { get; private set; }
     public DateOnly? ExpiryDate { get; private set; }
     public decimal? EstimatedPricePerUnit { get; private set; }
+    public string? CatalogItemName { get; private set; }
     public DateTime AddedAt { get; private init; } = DateTime.UtcNow;
 
     private SupplyItem() { }
@@ -22,7 +23,8 @@ public class SupplyItem : Entity
         string unit,
         Guid storageLocationId,
         DateOnly? expiryDate = null,
-        decimal? estimatedPricePerUnit = null) =>
+        decimal? estimatedPricePerUnit = null,
+        string? catalogItemName = null) =>
         new()
         {
             Name = name,
@@ -31,7 +33,8 @@ public class SupplyItem : Entity
             Unit = unit,
             StorageLocationId = storageLocationId,
             ExpiryDate = expiryDate,
-            EstimatedPricePerUnit = estimatedPricePerUnit
+            EstimatedPricePerUnit = estimatedPricePerUnit,
+            CatalogItemName = catalogItemName
         };
 
     public void Update(
@@ -41,7 +44,8 @@ public class SupplyItem : Entity
         string unit,
         Guid storageLocationId,
         DateOnly? expiryDate,
-        decimal? estimatedPricePerUnit)
+        decimal? estimatedPricePerUnit,
+        string? catalogItemName)
     {
         Name = name;
         Category = category;
@@ -50,6 +54,7 @@ public class SupplyItem : Entity
         StorageLocationId = storageLocationId;
         ExpiryDate = expiryDate;
         EstimatedPricePerUnit = estimatedPricePerUnit;
+        CatalogItemName = catalogItemName;
         MarkUpdated();
     }
 

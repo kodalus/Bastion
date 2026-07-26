@@ -55,6 +55,7 @@ public static class ScenarioEndpoints
             if (scenario is null) return Results.NotFound();
             var sortOrder = scenario.Items.Count > 0 ? scenario.Items.Max(i => i.SortOrder) + 1 : 1;
             var item = scenario.AddItem(req.Text, sortOrder);
+            repo.AddItem(item);
             await repo.SaveAsync(ct);
             return Results.Created($"/api/scenarios/{id}/items/{item.Id}", new { item.Id, item.Text, item.SortOrder, item.IsCompleted });
         });

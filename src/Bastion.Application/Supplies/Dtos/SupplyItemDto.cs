@@ -13,6 +13,7 @@ public record SupplyItemDto(
     string? StorageLocationDescription,
     DateOnly? ExpiryDate,
     decimal? EstimatedPricePerUnit,
+    string? CatalogItemName,
     DateTime AddedAt,
     bool IsExpired,
     bool IsExpiringSoon);
@@ -24,7 +25,8 @@ public record CreateSupplyItemRequest(
     string Unit,
     Guid StorageLocationId,
     DateOnly? ExpiryDate,
-    decimal? EstimatedPricePerUnit);
+    decimal? EstimatedPricePerUnit,
+    string? CatalogItemName = null);
 
 public record UpdateSupplyItemRequest(
     string Name,
@@ -33,4 +35,5 @@ public record UpdateSupplyItemRequest(
     string Unit,
     Guid StorageLocationId,
     DateOnly? ExpiryDate,
-    decimal? EstimatedPricePerUnit);
+    decimal? EstimatedPricePerUnit,
+    string? CatalogItemName = null);

@@ -8,5 +8,6 @@ public interface IScenarioRepository
     Task<Scenario?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task AddAsync(Scenario scenario, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
+    void AddItem(ChecklistItem item);
     Task SaveAsync(CancellationToken ct = default);
 }

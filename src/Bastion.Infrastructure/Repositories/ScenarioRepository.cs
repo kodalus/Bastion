@@ -22,6 +22,8 @@ public class ScenarioRepository(AppDbContext db) : IScenarioRepository
     public async Task AddAsync(Scenario scenario, CancellationToken ct = default) =>
         await db.Scenarios.AddAsync(scenario, ct);
 
+    public void AddItem(ChecklistItem item) => db.ChecklistItems.Add(item);
+
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var scenario = await db.Scenarios.FindAsync([id], ct);

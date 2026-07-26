@@ -34,7 +34,8 @@ public class SupplyService(ISupplyRepository repository) : ISupplyService
         var item = SupplyItem.Create(
             request.Name, request.Category, request.Quantity,
             request.Unit, request.StorageLocationId,
-            request.ExpiryDate, request.EstimatedPricePerUnit);
+            request.ExpiryDate, request.EstimatedPricePerUnit,
+            request.CatalogItemName);
         await repository.AddAsync(item, ct);
         var loc = await repository.GetLocationAsync(item.StorageLocationId, ct);
         return ToDto(item, loc.Name, loc.Description);
@@ -46,7 +47,8 @@ public class SupplyService(ISupplyRepository repository) : ISupplyService
         if (item is null) return null;
         item.Update(request.Name, request.Category, request.Quantity,
             request.Unit, request.StorageLocationId,
-            request.ExpiryDate, request.EstimatedPricePerUnit);
+            request.ExpiryDate, request.EstimatedPricePerUnit,
+            request.CatalogItemName);
         await repository.SaveAsync(ct);
         var loc = await repository.GetLocationAsync(item.StorageLocationId, ct);
         return ToDto(item, loc.Name, loc.Description);
@@ -68,6 +70,7 @@ public class SupplyService(ISupplyRepository repository) : ISupplyService
             item.Quantity, item.Unit,
             item.StorageLocationId, locationName, locationDesc,
             item.ExpiryDate, item.EstimatedPricePerUnit,
+            item.CatalogItemName,
             item.AddedAt,
             item.IsExpired(today),
             item.IsExpiringSoon(today, ExpirySoonDays));

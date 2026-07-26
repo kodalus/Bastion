@@ -25,6 +25,7 @@ export interface SupplyItem {
   storageLocationDescription: string | null;
   expiryDate: string | null;
   estimatedPricePerUnit: number | null;
+  catalogItemName: string | null;
   addedAt: string;
   isExpired: boolean;
   isExpiringSoon: boolean;
@@ -44,6 +45,7 @@ export interface CreateSupplyItemRequest {
   storageLocationId: string;
   expiryDate: string | null;
   estimatedPricePerUnit: number | null;
+  catalogItemName: string | null;
 }
 
 export interface CreateLocationRequest {
