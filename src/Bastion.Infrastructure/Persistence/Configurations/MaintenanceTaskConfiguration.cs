@@ -12,7 +12,7 @@ public class MaintenanceTaskConfiguration : IEntityTypeConfiguration<Maintenance
         builder.HasKey(t => t.Id);
 
         builder.Property(t => t.Description).IsRequired().HasMaxLength(500);
-        builder.Property(t => t.IntervalDays).IsRequired();
+        builder.Property(t => t.IntervalDays);
         builder.Property(t => t.LastCompletedAt);
         builder.Property(t => t.BaseDueDate).IsRequired();
         builder.Property(t => t.EquipmentId).IsRequired();
