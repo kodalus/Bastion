@@ -137,11 +137,11 @@ export interface SupplyFormDialogData {
     </mat-dialog-actions>
   `,
   styles: [`
-    .supply-form { display: flex; flex-direction: column; gap: 8px; min-width: 420px; padding-top: 8px; }
+    .supply-form { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; width: 100%; box-sizing: border-box; }
     .row { display: flex; gap: 12px; }
-    .row mat-form-field { flex: 1; }
-    .loc-name-field { flex: 1; min-width: 140px; }
-    .loc-desc-field { flex: 1.5; min-width: 160px; }
+    .row mat-form-field { flex: 1; min-width: 0; }
+    .loc-name-field { flex: 1; min-width: 0; }
+    .loc-desc-field { flex: 1.5; min-width: 0; }
     .add-loc-btn { color: #1976d2; font-size: 0.85rem; margin-top: -4px; }
     .new-loc-box {
       border: 1px solid #90caf9; border-radius: 8px; padding: 12px 16px;
@@ -151,6 +151,9 @@ export interface SupplyFormDialogData {
     .new-loc-actions { display: flex; gap: 8px; align-items: center; }
     mat-spinner { display: inline-block; }
     .cat-hint { font-size: 0.75rem; color: #888; }
+    @media (max-width: 640px) {
+      .row { flex-direction: column; gap: 4px; }
+    }
   `]
 })
 export class SupplyFormDialogComponent implements OnInit {

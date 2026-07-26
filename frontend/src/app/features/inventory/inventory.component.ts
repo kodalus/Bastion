@@ -63,93 +63,146 @@ import { findCatalogMatch } from '../../core/data/supply-catalog.data';
         <mat-progress-bar mode="indeterminate" />
       }
 
-      <table mat-table [dataSource]="filteredItems()" matSort (matSortChange)="onSort($event)" class="supply-table">
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Nazwa</th>
-          <td mat-cell *matCellDef="let item">{{ item.name }}</td>
-        </ng-container>
+      <!-- Mobile card list -->
+      @if (isMobile) {
+        @if (filteredItems().length === 0 && !loading()) {
+          <div class="empty-state">Brak zapasów. Dodaj pierwszy wpis!</div>
+        }
+        @for (item of filteredItems(); track item.id) {
+          <div class="supply-card" [class.card-expired]="item.isExpired" [class.card-expiring]="item.isExpiringSoon && !item.isExpired">
+            <div class="card-top">
+              <span class="card-name">{{ item.name }}</span>
+              <div class="card-actions">
+                <button mat-icon-button (click)="openEditDialog(item)"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button color="warn" (click)="deleteItem(item)"><mat-icon>delete</mat-icon></button>
+              </div>
+            </div>
+            <div class="card-chip-row">
+              <span [class]="'cat-chip cat-' + item.category.toLowerCase()">{{ categoryLabels[item.category] }}</span>
+              @if (item.storageLocationName) {
+                <span class="loc-chip"><mat-icon class="chip-icon">place</mat-icon>{{ item.storageLocationName }}</span>
+              }
+            </div>
+            <div class="card-body">
+              <div class="card-stat">
+                <span class="stat-label">Stan</span>
+                <span class="stat-value">{{ item.quantity }} {{ item.unit }}</span>
+              </div>
+              @if (suggestedFor(item); as s) {
+                <div class="card-stat">
+                  <span class="stat-label">Zalecana</span>
+                  <span class="stat-value" [class.below-target]="item.quantity < s">{{ s }} {{ item.unit }}</span>
+                </div>
+              }
+              @if (priceFor(item) != null) {
+                <div class="card-stat">
+                  <span class="stat-label">Cena/szt</span>
+                  <span class="stat-value">{{ priceFor(item) | number:'1.2-2' }} zł</span>
+                </div>
+              }
+              @if (item.expiryDate) {
+                <div class="card-stat">
+                  <span class="stat-label">Ważność</span>
+                  <span class="stat-value" [class.expired]="item.isExpired" [class.expiring-soon]="item.isExpiringSoon && !item.isExpired">
+                    {{ item.expiryDate | date:'dd.MM.yyyy' }}
+                    @if (item.isExpired) { <mat-icon class="status-icon">warning</mat-icon> }
+                    @else if (item.isExpiringSoon) { <mat-icon class="status-icon">schedule</mat-icon> }
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      } @else {
+        <!-- Desktop table -->
+        <table mat-table [dataSource]="filteredItems()" matSort (matSortChange)="onSort($event)" class="supply-table">
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Nazwa</th>
+            <td mat-cell *matCellDef="let item">{{ item.name }}</td>
+          </ng-container>
 
-        <ng-container matColumnDef="category">
-          <th mat-header-cell *matHeaderCellDef>Kategoria</th>
-          <td mat-cell *matCellDef="let item">
-            <mat-chip [class]="'cat-' + item.category.toLowerCase()">
-              {{ categoryLabels[item.category] }}
-            </mat-chip>
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="category">
+            <th mat-header-cell *matHeaderCellDef>Kategoria</th>
+            <td mat-cell *matCellDef="let item">
+              <mat-chip [class]="'cat-' + item.category.toLowerCase()">
+                {{ categoryLabels[item.category] }}
+              </mat-chip>
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="quantity">
-          <th mat-header-cell *matHeaderCellDef>Ilość</th>
-          <td mat-cell *matCellDef="let item">{{ item.quantity }} {{ item.unit }}</td>
-        </ng-container>
+          <ng-container matColumnDef="quantity">
+            <th mat-header-cell *matHeaderCellDef>Ilość</th>
+            <td mat-cell *matCellDef="let item">{{ item.quantity }} {{ item.unit }}</td>
+          </ng-container>
 
-        <ng-container matColumnDef="suggested">
-          <th mat-header-cell *matHeaderCellDef>Zalecana</th>
-          <td mat-cell *matCellDef="let item" class="suggested-cell">
-            @if (suggestedFor(item); as s) {
-              <span [class.below-target]="item.quantity < s" [matTooltip]="item.quantity < s ? 'Poniżej zalecanej ilości' : 'Osiągnięto zalecaną ilość'">
-                {{ s }} {{ item.unit }}
-              </span>
-            } @else {
-              <span style="color:#bbb">—</span>
-            }
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="suggested">
+            <th mat-header-cell *matHeaderCellDef>Zalecana</th>
+            <td mat-cell *matCellDef="let item" class="suggested-cell">
+              @if (suggestedFor(item); as s) {
+                <span [class.below-target]="item.quantity < s" [matTooltip]="item.quantity < s ? 'Poniżej zalecanej ilości' : 'Osiągnięto zalecaną ilość'">
+                  {{ s }} {{ item.unit }}
+                </span>
+              } @else {
+                <span style="color:#bbb">—</span>
+              }
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="location">
-          <th mat-header-cell *matHeaderCellDef>Miejsce</th>
-          <td mat-cell *matCellDef="let item">
-            {{ item.storageLocationName }}{{ item.storageLocationDescription ? ' – ' + item.storageLocationDescription : '' }}
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="location">
+            <th mat-header-cell *matHeaderCellDef>Miejsce</th>
+            <td mat-cell *matCellDef="let item">
+              {{ item.storageLocationName }}{{ item.storageLocationDescription ? ' – ' + item.storageLocationDescription : '' }}
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="price">
-          <th mat-header-cell *matHeaderCellDef>Cena/szt</th>
-          <td mat-cell *matCellDef="let item">
-            @if (priceFor(item) != null) {
-              {{ priceFor(item) | number:'1.2-2' }} zł
-            } @else {
-              <span style="color:#bbb">—</span>
-            }
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="price">
+            <th mat-header-cell *matHeaderCellDef>Cena/szt</th>
+            <td mat-cell *matCellDef="let item">
+              @if (priceFor(item) != null) {
+                {{ priceFor(item) | number:'1.2-2' }} zł
+              } @else {
+                <span style="color:#bbb">—</span>
+              }
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="expiryDate">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Data ważności</th>
-          <td mat-cell *matCellDef="let item">
-            @if (item.expiryDate) {
-              <span [class.expired]="item.isExpired" [class.expiring-soon]="item.isExpiringSoon && !item.isExpired">
-                {{ item.expiryDate | date:'dd.MM.yyyy' }}
-                @if (item.isExpired) { <mat-icon class="status-icon" matTooltip="Przeterminowane">warning</mat-icon> }
-                @else if (item.isExpiringSoon) { <mat-icon class="status-icon" matTooltip="Kończy się wkrótce">schedule</mat-icon> }
-              </span>
-            } @else {
-              <span class="no-expiry">—</span>
-            }
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="expiryDate">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Data ważności</th>
+            <td mat-cell *matCellDef="let item">
+              @if (item.expiryDate) {
+                <span [class.expired]="item.isExpired" [class.expiring-soon]="item.isExpiringSoon && !item.isExpired">
+                  {{ item.expiryDate | date:'dd.MM.yyyy' }}
+                  @if (item.isExpired) { <mat-icon class="status-icon" matTooltip="Przeterminowane">warning</mat-icon> }
+                  @else if (item.isExpiringSoon) { <mat-icon class="status-icon" matTooltip="Kończy się wkrótce">schedule</mat-icon> }
+                </span>
+              } @else {
+                <span class="no-expiry">—</span>
+              }
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let item">
-            <button mat-icon-button (click)="openEditDialog(item)" matTooltip="Edytuj">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button color="warn" (click)="deleteItem(item)" matTooltip="Usuń">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let item">
+              <button mat-icon-button (click)="openEditDialog(item)" matTooltip="Edytuj">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteItem(item)" matTooltip="Usuń">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="columns"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns;"></tr>
 
-        <tr class="mat-row" *matNoDataRow>
-          <td class="mat-cell empty-state" [colSpan]="columns.length">
-            Brak zapasów. Dodaj pierwszy wpis!
-          </td>
-        </tr>
-      </table>
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell empty-state" [colSpan]="columns.length">
+              Brak zapasów. Dodaj pierwszy wpis!
+            </td>
+          </tr>
+        </table>
+      }
     </div>
   `,
   styles: [`
@@ -167,6 +220,44 @@ import { findCatalogMatch } from '../../core/data/supply-catalog.data';
     td, th { padding: 8px 16px; }
     .suggested-cell { font-size: 0.85rem; color: #666; }
     .below-target { color: #e65100; font-weight: 500; }
+
+    @media (max-width: 640px) {
+      .inventory-container { padding: 10px; }
+      h1 { font-size: 1.25rem; }
+      .filters { gap: 8px; }
+      .filter-field { min-width: 0; flex: 1; }
+    }
+
+    /* Mobile cards */
+    .supply-card {
+      background: #fff; border-radius: 10px; margin-bottom: 10px;
+      padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      border-left: 4px solid #e0e0e0;
+    }
+    .card-expired { border-left-color: #c62828; background: #fff8f8; }
+    .card-expiring { border-left-color: #e65100; background: #fff8f4; }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .card-name { font-size: 0.95rem; font-weight: 600; flex: 1; line-height: 1.3; padding-top: 4px; }
+    .card-actions { display: flex; flex-shrink: 0; margin: -8px -8px 0 0; }
+    .card-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+    .cat-chip {
+      font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; font-weight: 500;
+      background: #e3f2fd; color: #1565c0;
+    }
+    .cat-chip.cat-water { background: #e3f2fd; color: #1565c0; }
+    .cat-chip.cat-food { background: #e8f5e9; color: #2e7d32; }
+    .cat-chip.cat-medical { background: #ffebee; color: #c62828; }
+    .cat-chip.cat-hygiene { background: #f3e5f5; color: #6a1b9a; }
+    .cat-chip.cat-energy { background: #fff3e0; color: #e65100; }
+    .cat-chip.cat-tools { background: #eceff1; color: #37474f; }
+    .cat-chip.cat-documents { background: #efebe9; color: #795548; }
+    .loc-chip { font-size: 0.72rem; color: #555; display: flex; align-items: center; gap: 2px; }
+    .chip-icon { font-size: 13px; height: 13px; width: 13px; }
+    .card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 4px; }
+    .card-stat { display: flex; flex-direction: column; }
+    .stat-label { font-size: 0.68rem; color: #999; text-transform: uppercase; letter-spacing: 0.03em; }
+    .stat-value { font-size: 0.88rem; font-weight: 500; }
+    .empty-state { text-align: center; padding: 48px 16px; color: #9e9e9e; }
   `]
 })
 export class InventoryComponent implements OnInit {
@@ -175,6 +266,7 @@ export class InventoryComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
+  readonly isMobile = window.innerWidth <= 640;
   readonly categoryLabels: { [key: string]: string } = CATEGORY_LABELS;
   readonly allCategories = Object.keys(CATEGORY_LABELS) as SupplyCategory[];
   readonly columns = ['name', 'category', 'quantity', 'suggested', 'location', 'price', 'expiryDate', 'actions'];
@@ -226,8 +318,14 @@ export class InventoryComponent implements OnInit {
     this.allItems.update(items => [...items]);
   }
 
+  private dialogConfig() {
+    const mobile = window.innerWidth <= 640;
+    return mobile ? { width: '95vw', maxWidth: '95vw', maxHeight: '90vh' } : { minWidth: '480px', maxHeight: '90vh' };
+  }
+
   openAddDialog() {
     this.dialog.open(SupplyFormDialogComponent, {
+      ...this.dialogConfig(),
       data: { locations: this.locations() }
     }).afterClosed().subscribe(request => {
       this.reloadLocations();
@@ -238,6 +336,7 @@ export class InventoryComponent implements OnInit {
 
   openEditDialog(item: SupplyItem) {
     this.dialog.open(SupplyFormDialogComponent, {
+      ...this.dialogConfig(),
       data: { item, locations: this.locations() }
     }).afterClosed().subscribe(request => {
       this.reloadLocations();

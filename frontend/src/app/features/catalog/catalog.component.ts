@@ -95,7 +95,7 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
               <tbody>
                 @for (row of rowsByCategory[cat]; track row.name) {
                   <tr [class.has-value]="row.qty !== null">
-                    <td class="col-name">{{ row.name }}</td>
+                    <td class="col-name">{{ row.name }}<span class="unit-inline"> {{ row.unit }}</span></td>
                     <td class="col-unit">{{ row.unit }}</td>
                     <td class="col-suggested">{{ row.suggestedQty }}</td>
                     <td class="col-qty">
@@ -155,7 +155,6 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
 
     .controls-card { margin-bottom: 20px; }
     .controls-row { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
-    .loc-field { flex: 1; min-width: 280px; }
     .action-buttons { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-top: 4px; }
 
     .cat-card { margin-bottom: 16px; }
@@ -192,6 +191,8 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
     .col-loc { width: 32%; }
     .price-input { width: 80px; }
 
+    .unit-inline { display: none; }
+
     .qty-input {
       width: 80px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 6px;
       font-size: 0.9rem; text-align: right; outline: none;
@@ -214,6 +215,25 @@ const CATEGORY_ORDER: SupplyCategory[] = ['Water', 'Food', 'Medical', 'Hygiene',
       color: #e65100; font-size: 0.85rem; margin-top: 8px; padding: 0 4px;
     }
     .warn-icon { font-size: 18px; height: 18px; width: 18px; }
+
+    @media (max-width: 640px) {
+      .catalog-container { padding: 10px; }
+      h1 { font-size: 1.2rem; }
+      .subtitle { font-size: 0.8rem; }
+
+      .cat-title { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .cat-loc-select { margin-left: 0; max-width: 100%; width: 100%; box-sizing: border-box; }
+
+      .col-unit, .col-loc { display: none; }
+      .col-name { width: auto; font-size: 0.88rem; }
+      .col-suggested { font-size: 0.78rem; white-space: nowrap; }
+      .col-qty { white-space: nowrap; }
+
+      .unit-inline { display: inline; color: #888; font-size: 0.75rem; margin-left: 3px; }
+
+      .qty-input { width: 60px; font-size: 0.85rem; padding: 3px 6px; }
+      .cat-table th, .cat-table td { padding: 5px 4px; }
+    }
   `]
 })
 export class CatalogComponent implements OnInit {
