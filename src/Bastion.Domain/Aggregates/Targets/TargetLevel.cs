@@ -12,6 +12,21 @@ public class TargetLevel : Entity
     public string Unit { get; private set; } = string.Empty;
     // false for categories with no daily rate (Tools, Documents): binary have/don't-have scoring
     public bool IsConsumable { get; private set; }
+    // Weight in the overall readiness score. High-priority categories are locked.
+    public decimal Weight { get; private set; }
+    // Derived: Water/Food/Medical weights cannot be changed by the user
+    public bool IsWeightLocked => Category is SupplyCategory.Water or SupplyCategory.Food or SupplyCategory.Medical;
+
+    private static readonly Dictionary<SupplyCategory, decimal> DefaultWeights = new()
+    {
+        [SupplyCategory.Water]     = 3m,
+        [SupplyCategory.Food]      = 3m,
+        [SupplyCategory.Medical]   = 2m,
+        [SupplyCategory.Hygiene]   = 1m,
+        [SupplyCategory.Energy]    = 1m,
+        [SupplyCategory.Tools]     = 0.5m,
+        [SupplyCategory.Documents] = 0.5m,
+    };
 
     private TargetLevel() { }
 
@@ -28,7 +43,8 @@ public class TargetLevel : Entity
             QuantityPerPersonPerDay = quantityPerPersonPerDay,
             HorizonDays = horizonDays,
             Unit = unit,
-            IsConsumable = category is not (SupplyCategory.Tools or SupplyCategory.Documents)
+            IsConsumable = category is not (SupplyCategory.Tools or SupplyCategory.Documents),
+            Weight = DefaultWeights.GetValueOrDefault(category, 1m),
         };
 
     public void Update(decimal quantityPerPersonPerDay, int horizonDays, string unit)
@@ -36,6 +52,16 @@ public class TargetLevel : Entity
         QuantityPerPersonPerDay = quantityPerPersonPerDay;
         HorizonDays = horizonDays;
         Unit = unit;
+        MarkUpdated();
+    }
+
+    public void UpdateWeight(decimal weight)
+    {
+        if (IsWeightLocked)
+            throw new InvalidOperationException($"Weight for {Category} (High priority) cannot be changed.");
+        if (weight < 0.5m)
+            throw new ArgumentOutOfRangeException(nameof(weight), "Weight must be at least 0.5.");
+        Weight = weight;
         MarkUpdated();
     }
 

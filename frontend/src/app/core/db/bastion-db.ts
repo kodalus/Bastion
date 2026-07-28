@@ -57,6 +57,7 @@ export interface TargetLevelRecord {
   horizonDays: number;
   unit: string;
   isConsumable: boolean;
+  weight: number;
 }
 
 export interface SettingRecord {

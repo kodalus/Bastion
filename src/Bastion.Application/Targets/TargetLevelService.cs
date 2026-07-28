@@ -44,6 +44,8 @@ public class TargetLevelService(ITargetLevelRepository repository) : ITargetLeve
         var target = await repository.GetByIdAsync(id, ct);
         if (target is null) return null;
         target.Update(request.QuantityPerPersonPerDay, request.HorizonDays, request.Unit);
+        if (request.Weight.HasValue)
+            target.UpdateWeight(request.Weight.Value);
         await repository.SaveAsync(ct);
         return ToDto(target);
     }
@@ -58,5 +60,5 @@ public class TargetLevelService(ITargetLevelRepository repository) : ITargetLeve
     }
 
     private static TargetLevelDto ToDto(TargetLevel t) =>
-        new(t.Id, t.HouseholdId, t.Category, t.QuantityPerPersonPerDay, t.HorizonDays, t.Unit, 0, t.IsConsumable);
+        new(t.Id, t.HouseholdId, t.Category, t.QuantityPerPersonPerDay, t.HorizonDays, t.Unit, 0, t.IsConsumable, t.Weight, t.IsWeightLocked);
 }

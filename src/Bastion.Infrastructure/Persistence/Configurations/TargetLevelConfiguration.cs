@@ -17,6 +17,7 @@ public class TargetLevelConfiguration : IEntityTypeConfiguration<TargetLevel>
         builder.Property(t => t.HorizonDays).IsRequired();
         builder.Property(t => t.Unit).IsRequired().HasMaxLength(20);
         builder.Property(t => t.IsConsumable).IsRequired().HasDefaultValue(true);
+        builder.Property(t => t.Weight).IsRequired().HasColumnType("numeric(5,2)").HasDefaultValue(1m);
 
         builder.HasIndex(t => new { t.HouseholdId, t.Category }).IsUnique();
     }

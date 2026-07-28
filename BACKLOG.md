@@ -41,7 +41,7 @@ OEE нигде в PROJECT-SPEC.md не упоминалась — спека у�
 - DTO, seed (C# и Dexie), TypeScript-интерфейсы — всё обновлено.
 - 4 новых юнит-теста. Итого 36 тестов, всё зелёное.
 
-### 6. Веса: перенести из хардкода в `TargetLevel` — три следствия
+### 6. ✅ Веса: перенести из хардкода в `TargetLevel` — три следствия
 Текущая несогласованность: нормы живут в таблице и редактируются пользователем,
 веса захардкожены в `ReadinessScoreService` как `private static readonly Dictionary`.
 **Действие:** добавить колонку `Weight decimal NOT NULL DEFAULT 1` в `TargetLevel`.

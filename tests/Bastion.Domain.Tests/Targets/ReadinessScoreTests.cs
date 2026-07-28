@@ -186,6 +186,52 @@ public class ReadinessScoreTests
         Assert.All(result.ShoppingList, i => Assert.Equal(ShoppingPriority.High, i.Priority));
     }
 
+    // --- Weight: from target, not hardcoded ---
+
+    [Fact]
+    public void Weight_DerivedFromCategory_OnCreate()
+    {
+        Assert.Equal(3m,   MakeTarget(SupplyCategory.Water,     3m).Weight);
+        Assert.Equal(3m,   MakeTarget(SupplyCategory.Food,      0.5m).Weight);
+        Assert.Equal(2m,   MakeTarget(SupplyCategory.Medical,   1m).Weight);
+        Assert.Equal(1m,   MakeTarget(SupplyCategory.Hygiene,   0.05m).Weight);
+        Assert.Equal(1m,   MakeTarget(SupplyCategory.Energy,    0.5m).Weight);
+        Assert.Equal(0.5m, MakeTarget(SupplyCategory.Tools,     1m, 1).Weight);
+        Assert.Equal(0.5m, MakeTarget(SupplyCategory.Documents, 1m, 1).Weight);
+    }
+
+    [Fact]
+    public void UpdateWeight_LockedCategory_Throws()
+    {
+        var medical = MakeTarget(SupplyCategory.Medical, 1m);
+        Assert.True(medical.IsWeightLocked);
+        Assert.Throws<InvalidOperationException>(() => medical.UpdateWeight(1m));
+    }
+
+    [Fact]
+    public void UpdateWeight_BelowMin_Throws()
+    {
+        var energy = MakeTarget(SupplyCategory.Energy, 0.5m);
+        Assert.Throws<ArgumentOutOfRangeException>(() => energy.UpdateWeight(0.4m));
+    }
+
+    [Fact]
+    public void UpdateWeight_AffectsOverallScore()
+    {
+        // Water (w=3) at 100%, Energy (w=1) at 0% → (100×3 + 0×1) / 4 = 75
+        var waterTarget  = MakeTarget(SupplyCategory.Water,  3m,   14);
+        var energyTarget = MakeTarget(SupplyCategory.Energy, 0.5m, 14);
+        var waterItem    = MakeItem(SupplyCategory.Water, 168m);
+
+        var r1 = ReadinessScoreService.Calculate([waterItem], [waterTarget, energyTarget], memberCount: 4, Today);
+        Assert.Equal(75, r1.OverallScore);
+
+        // Raise Energy weight to 3 → (100×3 + 0×3) / 6 = 50
+        energyTarget.UpdateWeight(3m);
+        var r2 = ReadinessScoreService.Calculate([waterItem], [waterTarget, energyTarget], memberCount: 4, Today);
+        Assert.Equal(50, r2.OverallScore);
+    }
+
     // --- Non-consumable binary scoring ---
 
     [Fact]

@@ -2,7 +2,8 @@ import { SupplyRecord, EquipmentRecord, MaintenanceTaskRecord, TargetLevelRecord
 import { ReadinessResult, CategoryScore, ShoppingListItem, OverdueTask, ShoppingPriority } from '../models/dashboard.model';
 import { SupplyCategory } from '../models/supply.model';
 
-const CATEGORY_WEIGHTS: Record<SupplyCategory, number> = {
+// Fallback for records seeded before weight was added (undefined → default by category)
+const DEFAULT_WEIGHTS: Record<SupplyCategory, number> = {
   Water: 3, Food: 3, Medical: 2, Hygiene: 1, Energy: 1, Tools: 0.5, Documents: 0.5
 };
 const EQUIPMENT_WEIGHT = 2;
@@ -115,11 +116,12 @@ export function calculateReadiness(
     equipmentScore = Math.round((recurringTasks.length - overdueCount) / recurringTasks.length * 100);
   }
 
+  const weightByCategory = new Map(targets.map(t => [t.category, t.weight ?? DEFAULT_WEIGHTS[t.category] ?? 1]));
   const hasEquipment = recurringTasks.length > 0;
-  const weightSum = Object.values(CATEGORY_WEIGHTS).reduce((a, b) => a + b, 0) +
+  const weightSum = categoryScores.reduce((sum, cs) => sum + (weightByCategory.get(cs.category) ?? 1), 0) +
     (hasEquipment ? EQUIPMENT_WEIGHT : 0);
   let weightedSum = categoryScores.reduce(
-    (acc, cs) => acc + cs.score * CATEGORY_WEIGHTS[cs.category], 0
+    (acc, cs) => acc + cs.score * (weightByCategory.get(cs.category) ?? 1), 0
   );
   if (hasEquipment) weightedSum += equipmentScore * EQUIPMENT_WEIGHT;
   const overallScore = Math.round(weightedSum / weightSum);

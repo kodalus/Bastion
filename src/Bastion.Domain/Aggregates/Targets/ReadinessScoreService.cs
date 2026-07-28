@@ -11,17 +11,6 @@ public static class ReadinessScoreService
     // 72 h / (14-day horizon) ≈ 21 % — minimum from civil-defence norms
     private const int CriticalDeficitThreshold = 21;
 
-    private static readonly Dictionary<SupplyCategory, decimal> Weights = new()
-    {
-        [SupplyCategory.Water] = 3m,
-        [SupplyCategory.Food] = 3m,
-        [SupplyCategory.Medical] = 2m,
-        [SupplyCategory.Hygiene] = 1m,
-        [SupplyCategory.Energy] = 1m,
-        [SupplyCategory.Tools] = 0.5m,
-        [SupplyCategory.Documents] = 0.5m,
-    };
-
     // Overload without maintenance tasks — existing callers and tests unchanged
     public static ReadinessResult Calculate(
         IReadOnlyList<SupplyItem> supplies,
@@ -95,8 +84,9 @@ public static class ReadinessScoreService
                 MidpointRounding.AwayFromZero);
 
         // Overall: weighted average of supply categories + equipment (only if tasks exist)
-        var totalWeight = categoryScores.Sum(c => Weights.GetValueOrDefault(c.Category, 1m));
-        var weightedSum = categoryScores.Sum(c => c.Score * Weights.GetValueOrDefault(c.Category, 1m));
+        var weightByCategory = targets.ToDictionary(t => t.Category, t => t.Weight);
+        var totalWeight = categoryScores.Sum(c => weightByCategory.GetValueOrDefault(c.Category, 1m));
+        var weightedSum = categoryScores.Sum(c => c.Score * weightByCategory.GetValueOrDefault(c.Category, 1m));
 
         if (maintenanceTasks.Count > 0)
         {

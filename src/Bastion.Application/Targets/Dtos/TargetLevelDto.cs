@@ -10,7 +10,9 @@ public record TargetLevelDto(
     int HorizonDays,
     string Unit,
     decimal RequiredTotal,
-    bool IsConsumable);
+    bool IsConsumable,
+    decimal Weight,
+    bool IsWeightLocked);
 
 public record CreateTargetLevelRequest(
     Guid HouseholdId,
@@ -22,4 +24,5 @@ public record CreateTargetLevelRequest(
 public record UpdateTargetLevelRequest(
     decimal QuantityPerPersonPerDay,
     int HorizonDays,
-    string Unit);
+    string Unit,
+    decimal? Weight = null);

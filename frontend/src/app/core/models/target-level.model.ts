@@ -7,6 +7,8 @@ export interface TargetLevel {
   horizonDays: number;
   unit: string;
   isConsumable: boolean;
+  weight: number;
+  isWeightLocked: boolean;
 }
 
 export interface UpdateTargetLevelRequest {
