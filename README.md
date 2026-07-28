@@ -14,7 +14,7 @@
 - **Equipment catalog** — recommended emergency gear (fire extinguisher, generator, radio, filters, tools…); tracks what you own vs. what's missing; equipment coverage score card on the dashboard
 - **Catalog parent linking** — each inventory item can be linked to its canonical catalog entry (e.g. "Makaron penne" → parent "Makaron"); auto-suggested on save via fuzzy name matching; enables correct suggested-quantity display and deduplication in the buy list
 - **Supply inventory** — CRUD with categories, storage locations, expiry dates (FIFO logic), estimated price per unit, suggested quantity from catalog, below-target highlight
-- **Target levels** — per-category norms (water: 3 L/person/day × 14 days etc.), seeded from civil-defense guidelines, fully editable
+- **Target levels** — per-category norms, fully editable. Defaults: 72-hour EU minimum as the critical floor, 14-day horizon as the recommended target. Water: 3 L/person/day (2 L drinking per Polish RCB guideline + 1 L hygiene)
 - **Equipment + maintenance** — recurring tasks with interval tracking, overdue/due-soon detection, contribution to readiness score
 - **Emergency checklists** — scenario-based (power outage, evacuation, water shortage), interactive tick-off with reset
 - **Price tracking** — prices entered in the supply or equipment catalog persist in `localStorage`; inventory and dashboard fall back to these when no per-item price is stored
@@ -84,7 +84,7 @@ Bastion.sln
 │   └── Bastion.Api             # Minimal API endpoints, DI wiring, seeder
 ├── frontend/                   # Angular 17 standalone app
 ├── tests/
-│   ├── Bastion.Domain.Tests           # 28 unit tests (ReadinessScore, supply/equipment logic)
+│   ├── Bastion.Domain.Tests           # 42 unit tests (ReadinessScore, supply/equipment logic)
 │   ├── Bastion.Application.Tests
 │   └── Bastion.Api.IntegrationTests   # Testcontainers — real PostgreSQL per test run
 └── docker-compose.yml
@@ -138,7 +138,7 @@ CI runs all tests on every push — see [`.github/workflows/ci.yml`](.github/wor
 
 ## Security considerations
 
-- **No secrets in the repository.** Connection strings, JWT keys, and SMTP credentials are in `appsettings.Development.json` (git-ignored for local overrides) or environment variables. `.env.example` provides a template.
+- **No production secrets in the repository.** `appsettings.Development.json` is committed and contains credentials for the local Docker container only (`bastion_dev`). Production connection strings, JWT keys, and SMTP credentials must be supplied via environment variables — never committed.
 - **EF Core only** — no raw SQL; parameterized queries by default throughout.
 - **Input validation** at the API boundary; `ProblemDetails` responses; no stack traces leaked to clients.
 - **Dependabot** enabled; CI fails on `dotnet list package --vulnerable`.
@@ -166,11 +166,20 @@ MailHog captures outbound email at http://localhost:8025.
 
 ---
 
+## Known limitations
+
+- **No authentication** — v1 is single-household, no login, no multi-tenancy. Auth is a planned future phase; the API is not safe to expose publicly.
+- **Prices in localStorage** — catalog prices are stored per browser, not in the database. Opening the app on a different device or browser resets all prices.
+- **Static catalogs** — the 39-item supply catalog and equipment catalog are typed constants in the frontend (`frontend/src/app/core/data/`), not database tables. Users cannot add catalog items without a code change.
+- **Backend not deployed** — the app runs locally via `docker compose up`. The Angular frontend is hosted on Vercel (offline-first, no backend required for the dashboard), but API-dependent pages (inventory CRUD, equipment) need the backend running.
+
+---
+
 ## Project background
 
 This project exists on two levels:
 
-1. **A real tool** I use for my own household (4 people). The seed data reflects genuine civil-defense norms (3 L water/person/day, 2100–2500 kcal food/person/day).
-2. **A portfolio piece** showing that a developer with 13 years of WPF/desktop and industrial system experience (CMMS, MES, APS) can build and ship a modern web product with clean architecture, CI, Docker, and tests.
+1. **A real tool** I use for my own household (4 people). Target levels are drawn from several sources: the EU 72-hour minimum, the Polish RCB 7-day guideline (2 L/person/day drinking water), and a 14-day extended horizon from rural-preparedness recommendations. The 3 L/day water default adds 1 L for hygiene on top of the RCB drinking norm — a deliberate choice, not a quoted figure.
+2. **A learning project**: 13 years of WPF/desktop development, first web stack.
 
 The domain analogy is deliberate: rotating supplies by expiry date is the same pattern as scheduled equipment maintenance. Bastion makes this explicit in the domain model.
