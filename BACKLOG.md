@@ -59,7 +59,17 @@ OEE нигде в PROJECT-SPEC.md не упоминалась — спека у�
 Решение: заморозить веса категорий с приоритетом High (Water, Food, Medical) — не редактируются.
 Для Medium и Low — разрешить настройку, но с минимумом `Weight >= 0.5`.
 
-### 7. Покрывающий индекс — изучить и применить
-**Открытый вопрос:** что такое covering index и когда он спасает в контексте запроса дашборда.
-Если запрос загружает только часть колонок, покрывающий индекс позволяет ответить без обращения
-к основной таблице (index-only scan). Разобрать: применимо ли это к текущей структуре запроса.
+### 7. ✅ Покрывающий индекс — изучено, не применяем сейчас
+
+**Вывод:** covering index не применим к текущему запросу дашборда.
+
+`SupplyRepository.GetAllAsync()` делает `SELECT * FROM "SupplyItems"` без предиката.
+Full table scan игнорирует любой индекс — covering эффект нулевой.
+
+**Когда станет актуально:** при реализации пункта 2 (фильтрация по `ExpiryDate` в запросе).
+Тогда существующий `IX_SupplyItems_ExpiryDate` заменить на covering:
+```csharp
+builder.HasIndex(s => s.ExpiryDate)
+       .IncludeProperties(s => new { s.Category, s.Quantity, s.EstimatedPricePerUnit });
+```
+ReadinessScoreService использует именно эти 4 колонки — index-only scan уберёт heap-read полностью.
