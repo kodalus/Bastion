@@ -2,7 +2,9 @@
 
 **Home preparedness management system** — a full-stack web application for tracking emergency supplies, maintenance schedules, and household readiness.
 
-> Built as a portfolio project demonstrating senior .NET + Angular skills. Domain expertise drawn from 13 years building industrial CMMS/MES/APS systems: supply rotation by expiry date follows the same pattern as planned equipment maintenance.
+**Live demo:** https://frontend-gilt-iota-29.vercel.app
+
+> A learning project: 13 years of desktop/WPF development, first web stack — ASP.NET Core, Angular, PostgreSQL, Docker. The domain analogy is real: supply rotation by expiry date follows the same pattern as planned equipment maintenance in industrial CMMS systems.
 
 ---
 
@@ -11,8 +13,6 @@
 | Dashboard | Inventory | Supply Catalog | Equipment Catalog |
 |-----------|-----------|--------------|-----------------|
 | Readiness index, gap analysis, buy list with costs | Supply list, suggested qty, below-target highlight | 39 items with import, prices, per-row location | Recommended gear, have/missing, coverage score |
-
-> **Live demo:** https://frontend-gilt-iota-29.vercel.app — seeds a realistic 4-person household on first load (offline-first, no backend required).
 
 ---
 
