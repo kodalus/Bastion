@@ -31,23 +31,15 @@ public static class DataSeeder
             household = await db.Households.FirstAsync();
         }
 
-        StorageLocation pantry, basement, carBag, safetyKit;
         if (!await db.StorageLocations.AnyAsync())
         {
-            pantry    = StorageLocation.Create("Spiżarnia",           "Główna spiżarnia w kuchni");
-            basement  = StorageLocation.Create("Piwnica",             "Długoterminowe zapasy");
-            carBag    = StorageLocation.Create("Torba w samochodzie", "EDC w bagażniku");
-            safetyKit = StorageLocation.Create("Plecak ewakuacyjny",  "72h bug-out bag");
-            db.StorageLocations.AddRange(pantry, basement, carBag, safetyKit);
+            db.StorageLocations.AddRange(
+                StorageLocation.Create("Spiżarnia",           "Główna spiżarnia w kuchni"),
+                StorageLocation.Create("Piwnica",             "Długoterminowe zapasy"),
+                StorageLocation.Create("Torba w samochodzie", "EDC w bagażniku"),
+                StorageLocation.Create("Plecak ewakuacyjny",  "72h bug-out bag")
+            );
             await db.SaveChangesAsync();
-        }
-        else
-        {
-            var locs = await db.StorageLocations.Take(4).ToListAsync();
-            pantry    = locs[0];
-            basement  = locs.Count > 1 ? locs[1] : locs[0];
-            carBag    = locs.Count > 2 ? locs[2] : locs[0];
-            safetyKit = locs.Count > 3 ? locs[3] : locs[0];
         }
 
         if (!await db.TargetLevels.AnyAsync())
@@ -66,88 +58,6 @@ public static class DataSeeder
             await db.SaveChangesAsync();
         }
 
-        if (!await db.SupplyItems.AnyAsync())
-        {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            var supplies = new[]
-            {
-                // Water — 60 L total (target: 3L × 4 people × 14 days = 168 L, ~36% coverage)
-                SupplyItem.Create("Woda źródlana 5L",              SupplyCategory.Water,    12m, "L",     pantry.Id,    today.AddYears(1),      1.50m),
-                SupplyItem.Create("Woda mineralna 1.5L",           SupplyCategory.Water,     9m, "L",     basement.Id,  today.AddMonths(8),      1.20m),
-                SupplyItem.Create("Tabletki do uzdatniania wody",   SupplyCategory.Water,    50m, "szt",   safetyKit.Id, today.AddDays(25),       0.20m),
-
-                // Food — mix of good, expiring-soon, and expired
-                SupplyItem.Create("Ryż biały 5kg",                 SupplyCategory.Food,      5m, "kg",    pantry.Id,    today.AddYears(2),       3.00m),
-                SupplyItem.Create("Makaron penne 1kg",             SupplyCategory.Food,      3m, "kg",    pantry.Id,    today.AddMonths(15),     2.50m),
-                SupplyItem.Create("Konserwy tuńczyk",              SupplyCategory.Food,     12m, "szt",   basement.Id,  today.AddYears(3),       3.50m),
-                SupplyItem.Create("Batony energetyczne",           SupplyCategory.Food,     24m, "szt",   safetyKit.Id, today.AddDays(20),       1.80m),
-                SupplyItem.Create("Liofilizaty obiadowe",          SupplyCategory.Food,     10m, "szt",   basement.Id,  today.AddYears(5),      18.00m),
-                SupplyItem.Create("Kasza gryczana 2kg",            SupplyCategory.Food,      4m, "kg",    pantry.Id,    today.AddYears(1),       4.50m),
-                SupplyItem.Create("Mleko UHT 1L",                  SupplyCategory.Food,      6m, "L",     pantry.Id,    today.AddMonths(4),      2.80m),
-                SupplyItem.Create("Sardynki — PRZETERMINOWANE",    SupplyCategory.Food,      4m, "szt",   pantry.Id,    today.AddDays(-30),      2.00m),
-
-                // Medical
-                SupplyItem.Create("Ibuprofen 400mg",               SupplyCategory.Medical,  30m, "tabl",  pantry.Id,    today.AddMonths(18),     0.50m),
-                SupplyItem.Create("Paracetamol 500mg",             SupplyCategory.Medical,  20m, "tabl",  pantry.Id,    today.AddMonths(24),     0.30m),
-                SupplyItem.Create("Bandaże elastyczne 10cm",       SupplyCategory.Medical,   5m, "szt",   carBag.Id,    today.AddYears(5),       3.00m),
-                SupplyItem.Create("Gaza jałowa",                   SupplyCategory.Medical,  10m, "szt",   safetyKit.Id, today.AddYears(3),       1.50m),
-                SupplyItem.Create("Płyn antyseptyczny 250ml",      SupplyCategory.Medical,   2m, "szt",   pantry.Id,    today.AddYears(2),       8.00m),
-                SupplyItem.Create("Rękawiczki jednorazowe",        SupplyCategory.Medical,  50m, "szt",   safetyKit.Id, today.AddYears(2),       0.20m),
-
-                // Hygiene
-                SupplyItem.Create("Mydło w kostce",                SupplyCategory.Hygiene,  10m, "szt",   basement.Id,  null,                    2.50m),
-                SupplyItem.Create("Chusteczki nawilżane",          SupplyCategory.Hygiene,   5m, "op",    safetyKit.Id, today.AddYears(2),       6.00m),
-                SupplyItem.Create("Papier toaletowy",              SupplyCategory.Hygiene,  24m, "rolek", basement.Id,  null,                    1.00m),
-
-                // Energy
-                SupplyItem.Create("Baterie AA",                    SupplyCategory.Energy,   24m, "szt",   pantry.Id,    today.AddYears(7),       1.20m),
-                SupplyItem.Create("Baterie AAA",                   SupplyCategory.Energy,   12m, "szt",   pantry.Id,    today.AddYears(6),       1.50m),
-                SupplyItem.Create("Świece zapachowe",              SupplyCategory.Energy,   20m, "szt",   basement.Id,  null,                    2.00m),
-                SupplyItem.Create("Powerbank 20000mAh",            SupplyCategory.Energy,    2m, "szt",   carBag.Id,    null,                   80.00m),
-                SupplyItem.Create("Latarka LED z akumulatorem",    SupplyCategory.Energy,    2m, "szt",   carBag.Id,    null,                   35.00m),
-
-                // Tools
-                SupplyItem.Create("Scyzoryk wielofunkcyjny",       SupplyCategory.Tools,     1m, "szt",   carBag.Id,    null,                  120.00m),
-                SupplyItem.Create("Taśma izolacyjna",              SupplyCategory.Tools,     3m, "rolek", basement.Id,  null,                    5.00m),
-                SupplyItem.Create("Linka paracord 30m",            SupplyCategory.Tools,     1m, "szt",   safetyKit.Id, null,                   25.00m),
-                SupplyItem.Create("Radioodtwarzacz na baterie",    SupplyCategory.Tools,     1m, "szt",   basement.Id,  null,                   60.00m),
-
-                // Documents
-                SupplyItem.Create("Kopie dokumentów (USB)",        SupplyCategory.Documents, 1m, "szt",   safetyKit.Id, null,                   null),
-                SupplyItem.Create("Gotówka awaryjna",              SupplyCategory.Documents, 1m, "szt",   safetyKit.Id, null,                   null),
-            };
-            db.SupplyItems.AddRange(supplies);
-            await db.SaveChangesAsync();
-        }
-
-        if (!await db.Equipment.AnyAsync())
-        {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            var purchase = new DateOnly(2022, 6, 1);
-
-            var generator = Equipment.Create("Generator prądotwórczy 2.5kW", EquipmentCategory.Generator, purchase, household.Id);
-            var oilChange = generator.AddTask("Przegląd roczny i wymiana oleju", 365);
-            oilChange.Complete(today.AddMonths(-2));   // current — next in 10 months
-            generator.AddTask("Sprawdzenie paliwa i akumulatora", 90);  // overdue — never done
-
-            var extinguisher = Equipment.Create("Gaśnica proszkowa 6kg", EquipmentCategory.FireExtinguisher, purchase, household.Id);
-            var extCheck = extinguisher.AddTask("Przegląd techniczny (UDT)", 365);
-            extCheck.Complete(today.AddMonths(-13));  // overdue by 1 month
-
-            var firstAid = Equipment.Create("Apteczka pierwszej pomocy", EquipmentCategory.FirstAid, purchase, household.Id);
-            var aidCheck = firstAid.AddTask("Sprawdzenie dat ważności zawartości", 180);
-            aidCheck.Complete(today.AddDays(-10));    // current — next in ~5 months
-
-            var filter = Equipment.Create("Filtr do wody Dafi", EquipmentCategory.Filter, purchase, household.Id);
-            filter.AddTask("Wymiana wkładu filtrującego", 60);  // overdue — never done (purchase > 60 days ago)
-
-            var radio = Equipment.Create("Radiostacja Baofeng UV-5R", EquipmentCategory.Communication, purchase, household.Id);
-            var radioCheck = radio.AddTask("Sprawdzenie baterii i zasięgu", 180);
-            radioCheck.Complete(today.AddDays(-5));   // current — next in ~6 months
-
-            db.Equipment.AddRange(generator, extinguisher, firstAid, filter, radio);
-            await db.SaveChangesAsync();
-        }
 
         if (!await db.Scenarios.AnyAsync())
         {
