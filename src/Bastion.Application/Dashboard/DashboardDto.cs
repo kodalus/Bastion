@@ -9,7 +9,8 @@ public record DashboardDto(
     IReadOnlyList<CategoryScoreDto> CategoryScores,
     IReadOnlyList<ShoppingListItemDto> ShoppingList,
     int EquipmentScore,
-    IReadOnlyList<OverdueTaskDto> OverdueTasks);
+    IReadOnlyList<OverdueTaskDto> OverdueTasks,
+    bool HasCriticalDeficit);
 
 public record CategoryScoreDto(
     SupplyCategory Category,

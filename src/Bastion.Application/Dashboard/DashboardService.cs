@@ -56,6 +56,7 @@ public class DashboardService(
                 .Select(s => new ShoppingListItemDto(s.Category, s.Gap, s.Unit, s.Priority, s.EstimatedCost))
                 .ToList(),
             result.EquipmentScore,
-            overdueTasks);
+            overdueTasks,
+            result.HasCriticalDeficit);
     }
 }
