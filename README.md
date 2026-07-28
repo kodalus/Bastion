@@ -8,14 +8,6 @@
 
 ---
 
-## Screenshots
-
-| Dashboard | Inventory | Supply Catalog | Equipment Catalog |
-|-----------|-----------|--------------|-----------------|
-| Readiness index, gap analysis, buy list with costs | Supply list, suggested qty, below-target highlight | 39 items with import, prices, per-row location | Recommended gear, have/missing, coverage score |
-
----
-
 ## Features
 
 - **Readiness index (0–100%)** — weighted score across all supply categories + equipment maintenance, updated on every dashboard load
