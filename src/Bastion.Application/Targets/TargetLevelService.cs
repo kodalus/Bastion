@@ -58,5 +58,5 @@ public class TargetLevelService(ITargetLevelRepository repository) : ITargetLeve
     }
 
     private static TargetLevelDto ToDto(TargetLevel t) =>
-        new(t.Id, t.HouseholdId, t.Category, t.QuantityPerPersonPerDay, t.HorizonDays, t.Unit, 0);
+        new(t.Id, t.HouseholdId, t.Category, t.QuantityPerPersonPerDay, t.HorizonDays, t.Unit, 0, t.IsConsumable);
 }

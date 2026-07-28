@@ -40,13 +40,13 @@ export async function seedIfEmpty(): Promise<void> {
   ] as LocationRecord[]);
 
   await db.targetLevels.bulkAdd([
-    { id: newId(), category: 'Water',     quantityPerPersonPerDay: 3,    horizonDays: 14, unit: 'L' },
-    { id: newId(), category: 'Food',      quantityPerPersonPerDay: 0.5,  horizonDays: 14, unit: 'kg' },
-    { id: newId(), category: 'Medical',   quantityPerPersonPerDay: 1,    horizonDays: 1,  unit: 'szt' },
-    { id: newId(), category: 'Hygiene',   quantityPerPersonPerDay: 0.05, horizonDays: 14, unit: 'kg' },
-    { id: newId(), category: 'Energy',    quantityPerPersonPerDay: 0.5,  horizonDays: 14, unit: 'szt' },
-    { id: newId(), category: 'Tools',     quantityPerPersonPerDay: 1,    horizonDays: 1,  unit: 'szt' },
-    { id: newId(), category: 'Documents', quantityPerPersonPerDay: 1,    horizonDays: 1,  unit: 'szt' }
+    { id: newId(), category: 'Water',     quantityPerPersonPerDay: 3,    horizonDays: 14, unit: 'L',    isConsumable: true },
+    { id: newId(), category: 'Food',      quantityPerPersonPerDay: 0.5,  horizonDays: 14, unit: 'kg',   isConsumable: true },
+    { id: newId(), category: 'Medical',   quantityPerPersonPerDay: 1,    horizonDays: 1,  unit: 'szt',  isConsumable: true },
+    { id: newId(), category: 'Hygiene',   quantityPerPersonPerDay: 0.05, horizonDays: 14, unit: 'kg',   isConsumable: true },
+    { id: newId(), category: 'Energy',    quantityPerPersonPerDay: 0.5,  horizonDays: 14, unit: 'szt',  isConsumable: true },
+    { id: newId(), category: 'Tools',     quantityPerPersonPerDay: 1,    horizonDays: 1,  unit: 'szt',  isConsumable: false },
+    { id: newId(), category: 'Documents', quantityPerPersonPerDay: 1,    horizonDays: 1,  unit: 'szt',  isConsumable: false }
   ] as TargetLevelRecord[]);
 
   const now = todayStr();

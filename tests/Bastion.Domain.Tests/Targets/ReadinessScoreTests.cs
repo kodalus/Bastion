@@ -186,14 +186,70 @@ public class ReadinessScoreTests
         Assert.All(result.ShoppingList, i => Assert.Equal(ShoppingPriority.High, i.Priority));
     }
 
+    // --- Non-consumable binary scoring ---
+
+    [Fact]
+    public void NonConsumable_FullStock_Score100()
+    {
+        // Tools target: qppd=1, required=1 (absolute). Have 4 items → score 100
+        var target = MakeTarget(SupplyCategory.Tools, 1m, 1);
+        var items = new[]
+        {
+            MakeItem(SupplyCategory.Tools, 1m),
+            MakeItem(SupplyCategory.Tools, 3m),
+        };
+
+        var result = ReadinessScoreService.Calculate([..items], [target], memberCount: 4, Today);
+
+        Assert.Equal(100, result.CategoryScores[0].Score);
+        Assert.Empty(result.ShoppingList);
+    }
+
+    [Fact]
+    public void NonConsumable_NoItems_Score0()
+    {
+        var target = MakeTarget(SupplyCategory.Documents, 1m, 1);
+
+        var result = ReadinessScoreService.Calculate([], [target], memberCount: 4, Today);
+
+        Assert.Equal(0, result.CategoryScores[0].Score);
+        Assert.Single(result.ShoppingList);
+    }
+
+    [Fact]
+    public void NonConsumable_ScalesByQppd_NotByMembers()
+    {
+        // qppd=2 → required=2 absolute (not 2×4=8). Have 2 → score 100.
+        var target = MakeTarget(SupplyCategory.Tools, 2m, 1);
+        var item = MakeItem(SupplyCategory.Tools, 2m);
+
+        var result = ReadinessScoreService.Calculate([item], [target], memberCount: 4, Today);
+
+        Assert.Equal(100, result.CategoryScores[0].Score);
+        Assert.Equal(2m, target.RequiredTotal(4)); // RequiredTotal returns qppd for non-consumable
+    }
+
+    [Fact]
+    public void NonConsumable_ExpiringItems_NotHalved()
+    {
+        // Non-consumable: expiry weighting not applied. Item expiring in 5 days counts at full qty.
+        var target = MakeTarget(SupplyCategory.Documents, 1m, 1);
+        var expiringItem = MakeItem(SupplyCategory.Documents, 1m, expiry: Today.AddDays(5));
+
+        var result = ReadinessScoreService.Calculate([expiringItem], [target], memberCount: 1, Today);
+
+        Assert.Equal(100, result.CategoryScores[0].Score);
+        Assert.Equal(1m, result.CategoryScores[0].Available);
+    }
+
     // --- Critical deficit flag ---
 
     [Fact]
     public void CriticalDeficit_False_WhenAllHighCategoriesAboveThreshold()
     {
-        // Medical at 22% (just above 21% threshold) → no critical deficit
+        // Medical required: 1 × 14 × 4 = 56. Have 22% of 56 = 12.32 → score 22% > threshold 21%
         var target = MakeTarget(SupplyCategory.Medical, 1m, 14);
-        var item = MakeItem(SupplyCategory.Medical, 44m * 0.22m); // 22% of 14×4×1=56 ≈ 12.32
+        var item = MakeItem(SupplyCategory.Medical, 56m * 0.22m); // 12.32
 
         var result = ReadinessScoreService.Calculate([item], [target], memberCount: 4, Today);
 

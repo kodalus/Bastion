@@ -56,6 +56,7 @@ export interface TargetLevelRecord {
   quantityPerPersonPerDay: number;
   horizonDays: number;
   unit: string;
+  isConsumable: boolean;
 }
 
 export interface SettingRecord {

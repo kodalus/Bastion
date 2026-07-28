@@ -6,6 +6,7 @@ export interface TargetLevel {
   quantityPerPersonPerDay: number;
   horizonDays: number;
   unit: string;
+  isConsumable: boolean;
 }
 
 export interface UpdateTargetLevelRequest {

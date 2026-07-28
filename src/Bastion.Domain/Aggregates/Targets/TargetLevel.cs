@@ -10,6 +10,8 @@ public class TargetLevel : Entity
     public decimal QuantityPerPersonPerDay { get; private set; }
     public int HorizonDays { get; private set; }
     public string Unit { get; private set; } = string.Empty;
+    // false for categories with no daily rate (Tools, Documents): binary have/don't-have scoring
+    public bool IsConsumable { get; private set; }
 
     private TargetLevel() { }
 
@@ -25,7 +27,8 @@ public class TargetLevel : Entity
             Category = category,
             QuantityPerPersonPerDay = quantityPerPersonPerDay,
             HorizonDays = horizonDays,
-            Unit = unit
+            Unit = unit,
+            IsConsumable = category is not (SupplyCategory.Tools or SupplyCategory.Documents)
         };
 
     public void Update(decimal quantityPerPersonPerDay, int horizonDays, string unit)
@@ -36,6 +39,9 @@ public class TargetLevel : Entity
         MarkUpdated();
     }
 
+    // For consumable: qppd × horizon × members. For non-consumable: flat qppd (absolute count).
     public decimal RequiredTotal(int memberCount) =>
-        QuantityPerPersonPerDay * HorizonDays * memberCount;
+        IsConsumable
+            ? QuantityPerPersonPerDay * HorizonDays * memberCount
+            : QuantityPerPersonPerDay;
 }

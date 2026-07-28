@@ -9,7 +9,8 @@ public record TargetLevelDto(
     decimal QuantityPerPersonPerDay,
     int HorizonDays,
     string Unit,
-    decimal RequiredTotal);
+    decimal RequiredTotal,
+    bool IsConsumable);
 
 public record CreateTargetLevelRequest(
     Guid HouseholdId,

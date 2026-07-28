@@ -48,16 +48,28 @@ public static class ReadinessScoreService
             var required = target.RequiredTotal(memberCount);
             var categoryItems = supplies.Where(s => s.Category == target.Category).ToList();
 
-            var available = categoryItems.Sum(item =>
+            decimal available;
+            if (target.IsConsumable)
             {
-                if (item.IsExpired(today)) return 0m;
-                if (item.IsExpiringSoon(today, ExpiringSoonDays)) return item.Quantity * ExpiringSoonWeight;
-                return item.Quantity;
-            });
+                available = categoryItems.Sum(item =>
+                {
+                    if (item.IsExpired(today)) return 0m;
+                    if (item.IsExpiringSoon(today, ExpiringSoonDays)) return item.Quantity * ExpiringSoonWeight;
+                    return item.Quantity;
+                });
+            }
+            else
+            {
+                // Non-consumable: count only non-expired items (expiry weighting not meaningful)
+                available = categoryItems
+                    .Where(item => !item.IsExpired(today))
+                    .Sum(item => item.Quantity);
+            }
 
-            var score = required == 0
-                ? 100
-                : (int)Math.Min(100m, Math.Round(available / required * 100, MidpointRounding.AwayFromZero));
+            var score = required == 0 ? 100
+                : target.IsConsumable
+                    ? (int)Math.Min(100m, Math.Round(available / required * 100, MidpointRounding.AwayFromZero))
+                    : available >= required ? 100 : 0;
 
             categoryScores.Add(new CategoryScore(target.Category, score, available, required, target.Unit));
 

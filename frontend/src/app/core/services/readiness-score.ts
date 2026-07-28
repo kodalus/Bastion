@@ -50,19 +50,25 @@ export function calculateReadiness(
   const shoppingList: ShoppingListItem[] = [];
 
   for (const target of targets) {
-    const required = target.quantityPerPersonPerDay * target.horizonDays * memberCount;
+    const isConsumable = target.isConsumable ?? true;
+    const required = isConsumable
+      ? target.quantityPerPersonPerDay * target.horizonDays * memberCount
+      : target.quantityPerPersonPerDay;
     let available = 0;
 
     for (const s of supplies.filter(s => s.category === target.category)) {
       if (s.expiryDate && s.expiryDate < today) continue;
-      if (s.expiryDate && s.expiryDate <= soon30) {
+      if (isConsumable && s.expiryDate && s.expiryDate <= soon30) {
         available += s.quantity * EXPIRING_SOON_WEIGHT;
       } else {
         available += s.quantity;
       }
     }
 
-    const score = required > 0 ? Math.min(100, Math.round(available / required * 100)) : 100;
+    const score = required <= 0 ? 100
+      : isConsumable
+        ? Math.min(100, Math.round(available / required * 100))
+        : available >= required ? 100 : 0;
     categoryScores.push({
       category: target.category,
       score,
