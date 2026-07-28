@@ -55,6 +55,13 @@ interface EquipBuyItem extends CatalogEquipmentItem {
       }
 
       @if (result(); as r) {
+        @if (r.hasCriticalDeficit) {
+          <div class="critical-deficit-banner">
+            <mat-icon>warning</mat-icon>
+            <span>Krytyczny niedobór — Woda, Żywność lub Medyczne poniżej 72-godzinnego minimum. Uzupełnij niezwłocznie.</span>
+          </div>
+        }
+
         <!-- Score cards -->
         <div class="score-row">
           <mat-card class="score-card" [class]="scoreClass(r.overallScore)">
@@ -344,6 +351,14 @@ interface EquipBuyItem extends CatalogEquipmentItem {
     .equip-cat-chip { background: #e8eaf6 !important; color: #3949ab !important; font-size: 0.75rem; flex-shrink: 0; }
     .equip-buy-price { flex-shrink: 0; min-width: 80px; text-align: right; font-size: 0.88rem; }
     .price-value { font-weight: 500; color: #333; }
+
+    .critical-deficit-banner {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 18px; margin-bottom: 20px;
+      background: #ffebee; border: 2px solid #e53935; border-radius: 8px;
+      color: #b71c1c; font-weight: 500; font-size: 0.95rem;
+    }
+    .critical-deficit-banner mat-icon { color: #e53935; flex-shrink: 0; }
 
     .error-state {
       display: flex; align-items: center; gap: 8px;

@@ -6,7 +6,8 @@ public record ReadinessResult(
     int OverallScore,
     IReadOnlyList<CategoryScore> CategoryScores,
     IReadOnlyList<ShoppingListItem> ShoppingList,
-    int EquipmentScore);
+    int EquipmentScore,
+    bool HasCriticalDeficit);
 
 public record CategoryScore(
     SupplyCategory Category,

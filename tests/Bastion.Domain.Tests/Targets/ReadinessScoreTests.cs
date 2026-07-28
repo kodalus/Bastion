@@ -186,6 +186,60 @@ public class ReadinessScoreTests
         Assert.All(result.ShoppingList, i => Assert.Equal(ShoppingPriority.High, i.Priority));
     }
 
+    // --- Critical deficit flag ---
+
+    [Fact]
+    public void CriticalDeficit_False_WhenAllHighCategoriesAboveThreshold()
+    {
+        // Medical at 22% (just above 21% threshold) → no critical deficit
+        var target = MakeTarget(SupplyCategory.Medical, 1m, 14);
+        var item = MakeItem(SupplyCategory.Medical, 44m * 0.22m); // 22% of 14×4×1=56 ≈ 12.32
+
+        var result = ReadinessScoreService.Calculate([item], [target], memberCount: 4, Today);
+
+        Assert.False(result.HasCriticalDeficit);
+    }
+
+    [Fact]
+    public void CriticalDeficit_True_WhenHighCategoryBelowThreshold()
+    {
+        // Medical at 0%, all else at 100% → score ≈ 82%, but flag must trigger
+        var targets = new[]
+        {
+            MakeTarget(SupplyCategory.Water, 3m, 14),
+            MakeTarget(SupplyCategory.Food, 0.5m, 14),
+            MakeTarget(SupplyCategory.Medical, 1m, 14),
+        };
+        var waterItem = MakeItem(SupplyCategory.Water, 168m);  // 100%
+        var foodItem = MakeItem(SupplyCategory.Food, 28m);     // 100%
+        // No Medical items → Medical = 0%
+
+        var result = ReadinessScoreService.Calculate(
+            [waterItem, foodItem], targets, memberCount: 4, Today);
+
+        Assert.True(result.HasCriticalDeficit);
+        Assert.True(result.OverallScore > 60); // overall still high despite flag
+    }
+
+    [Fact]
+    public void CriticalDeficit_False_WhenOnlyLowCategoryIsDeficient()
+    {
+        // Tools at 0% (Low priority) → no critical deficit
+        var target = MakeTarget(SupplyCategory.Tools, 1m, 1);
+
+        var result = ReadinessScoreService.Calculate([], [target], memberCount: 1, Today);
+
+        Assert.False(result.HasCriticalDeficit);
+    }
+
+    [Fact]
+    public void CriticalDeficit_False_WhenNoTargets()
+    {
+        var result = ReadinessScoreService.Calculate([], [], memberCount: 1, Today);
+
+        Assert.False(result.HasCriticalDeficit);
+    }
+
     // --- Estimated cost ---
 
     [Fact]

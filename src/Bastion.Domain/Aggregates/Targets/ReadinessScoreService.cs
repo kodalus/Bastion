@@ -8,6 +8,8 @@ public static class ReadinessScoreService
     private const int ExpiringSoonDays = 30;
     private const decimal ExpiringSoonWeight = 0.5m;
     private const decimal EquipmentWeight = 2m;
+    // 72 h / (14-day horizon) ≈ 21 % — minimum from civil-defence norms
+    private const int CriticalDeficitThreshold = 21;
 
     private static readonly Dictionary<SupplyCategory, decimal> Weights = new()
     {
@@ -36,7 +38,7 @@ public static class ReadinessScoreService
         DateOnly today)
     {
         if (targets.Count == 0 && maintenanceTasks.Count == 0)
-            return new ReadinessResult(0, [], [], 100);
+            return new ReadinessResult(0, [], [], 100, false);
 
         var categoryScores = new List<CategoryScore>();
         var shoppingList = new List<ShoppingListItem>();
@@ -94,6 +96,9 @@ public static class ReadinessScoreService
             ? equipmentScore
             : (int)Math.Round(weightedSum / totalWeight, MidpointRounding.AwayFromZero);
 
+        var hasCriticalDeficit = categoryScores.Any(
+            cs => GetPriority(cs.Category) == ShoppingPriority.High && cs.Score < CriticalDeficitThreshold);
+
         var sortedShoppingList = shoppingList
             .OrderBy(i => (int)i.Priority)
             .ThenBy(i => i.Category.ToString())
@@ -103,7 +108,8 @@ public static class ReadinessScoreService
             overallScore,
             categoryScores.AsReadOnly(),
             sortedShoppingList.AsReadOnly(),
-            equipmentScore);
+            equipmentScore,
+            hasCriticalDeficit);
     }
 
     private static ShoppingPriority GetPriority(SupplyCategory category) => category switch

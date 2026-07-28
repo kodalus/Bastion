@@ -34,4 +34,5 @@ export interface ReadinessResult {
   shoppingList: ShoppingListItem[];
   equipmentScore: number;
   overdueTasks: OverdueTask[];
+  hasCriticalDeficit: boolean;
 }

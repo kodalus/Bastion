@@ -8,6 +8,9 @@ const CATEGORY_WEIGHTS: Record<SupplyCategory, number> = {
 const EQUIPMENT_WEIGHT = 2;
 const EXPIRING_SOON_DAYS = 30;
 const EXPIRING_SOON_WEIGHT = 0.5;
+// 72 h / 14-day horizon ≈ 21 % — civil-defence minimum
+const CRITICAL_DEFICIT_THRESHOLD = 21;
+const HIGH_PRIORITY_CATEGORIES: SupplyCategory[] = ['Water', 'Food', 'Medical'];
 
 function todayStr(): string {
   return new Date().toISOString().split('T')[0];
@@ -121,5 +124,9 @@ export function calculateReadiness(
               a.category.localeCompare(b.category)
   );
 
-  return { overallScore, memberCount, categoryScores, shoppingList, equipmentScore, overdueTasks };
+  const hasCriticalDeficit = categoryScores.some(
+    cs => HIGH_PRIORITY_CATEGORIES.includes(cs.category) && cs.score < CRITICAL_DEFICIT_THRESHOLD
+  );
+
+  return { overallScore, memberCount, categoryScores, shoppingList, equipmentScore, overdueTasks, hasCriticalDeficit };
 }
