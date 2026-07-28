@@ -3,7 +3,6 @@ import { CommonModule, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -43,7 +42,7 @@ interface EquipBuyItem extends CatalogEquipmentItem {
   standalone: true,
   imports: [
     CommonModule, DecimalPipe, RouterLink,
-    MatCardModule, MatProgressBarModule, MatTableModule,
+    MatCardModule, MatProgressBarModule,
     MatChipsModule, MatIconModule, MatButtonModule, MatDividerModule
   ],
   template: `
@@ -100,26 +99,18 @@ interface EquipBuyItem extends CatalogEquipmentItem {
         <!-- Overdue maintenance tasks -->
         @if (r.overdueTasks.length > 0) {
           <h2>Przeterminowane przeglądy</h2>
-          <table mat-table [dataSource]="r.overdueTasks" class="shop-table">
-            <ng-container matColumnDef="equipment">
-              <th mat-header-cell *matHeaderCellDef>Sprzęt</th>
-              <td mat-cell *matCellDef="let t">{{ t.equipmentName }}</td>
-            </ng-container>
-            <ng-container matColumnDef="task">
-              <th mat-header-cell *matHeaderCellDef>Zadanie</th>
-              <td mat-cell *matCellDef="let t">{{ t.taskDescription }}</td>
-            </ng-container>
-            <ng-container matColumnDef="due">
-              <th mat-header-cell *matHeaderCellDef>Było wykonać</th>
-              <td mat-cell *matCellDef="let t">{{ t.nextDueAt }}</td>
-            </ng-container>
-            <ng-container matColumnDef="overdue">
-              <th mat-header-cell *matHeaderCellDef>Dni po terminie</th>
-              <td mat-cell *matCellDef="let t"><span class="overdue-days">{{ t.daysOverdue }}</span></td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="overdueColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: overdueColumns;"></tr>
-          </table>
+          <div class="badge-list">
+            @for (t of r.overdueTasks; track t.taskId) {
+              <div class="badge-card">
+                <div class="badge-main">
+                  <span class="badge-title">{{ t.equipmentName }}</span>
+                  <span class="badge-sub">{{ t.taskDescription }}</span>
+                  <span class="badge-date">Termin: {{ t.nextDueAt }}</span>
+                </div>
+                <span class="overdue-chip">+{{ t.daysOverdue }} dni</span>
+              </div>
+            }
+          </div>
           <div class="eq-link">
             <a mat-button color="primary" routerLink="/equipment">
               <mat-icon>construction</mat-icon> Przejdź do sprzętu
@@ -153,89 +144,52 @@ interface EquipBuyItem extends CatalogEquipmentItem {
         <!-- Readiness shopping list -->
         @if (r.shoppingList.length > 0) {
           <h2>Lista zakupów (cele zapasów)</h2>
-          <table mat-table [dataSource]="r.shoppingList" class="shop-table">
-            <ng-container matColumnDef="priority">
-              <th mat-header-cell *matHeaderCellDef>Priorytet</th>
-              <td mat-cell *matCellDef="let item">
-                <mat-chip [class]="'priority-' + item.priority.toLowerCase()">
+          <div class="badge-list">
+            @for (item of r.shoppingList; track item.category) {
+              <div class="badge-card">
+                <mat-chip [class]="'priority-' + item.priority.toLowerCase()" class="badge-priority-chip">
                   {{ priorityLabels[item.priority] }}
                 </mat-chip>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="category">
-              <th mat-header-cell *matHeaderCellDef>Kategoria</th>
-              <td mat-cell *matCellDef="let item">{{ categoryLabels[item.category] }}</td>
-            </ng-container>
-            <ng-container matColumnDef="gap">
-              <th mat-header-cell *matHeaderCellDef>Brakuje</th>
-              <td mat-cell *matCellDef="let item">{{ item.gap | number:'1.1-1' }} {{ item.unit }}</td>
-            </ng-container>
-            <ng-container matColumnDef="cost">
-              <th mat-header-cell *matHeaderCellDef>Szac. koszt</th>
-              <td mat-cell *matCellDef="let item">
+                <div class="badge-main">
+                  <span class="badge-title">{{ categoryLabels[item.category] }}</span>
+                  <span class="badge-sub">Brakuje: {{ item.gap | number:'1.1-1' }} {{ item.unit }}</span>
+                </div>
                 @if (catalogCostFor(item); as cost) {
-                  {{ cost | number:'1.2-2' }} zł
-                } @else {
-                  <span class="no-price">—</span>
+                  <span class="badge-price">{{ cost | number:'1.2-2' }} zł</span>
                 }
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="shopColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: shopColumns;"></tr>
-          </table>
+              </div>
+            }
+          </div>
         }
       }
 
       <!-- Supply buy list: qty=0 + missing from catalog -->
       @if (supplyBuyList().length > 0) {
         <h2>Do kupienia – Zapasy</h2>
-        <table mat-table [dataSource]="supplyBuyList()" class="shop-table">
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Produkt</th>
-            <td mat-cell *matCellDef="let item">{{ item.name }}</td>
-          </ng-container>
-          <ng-container matColumnDef="category">
-            <th mat-header-cell *matHeaderCellDef>Kategoria</th>
-            <td mat-cell *matCellDef="let item">{{ categoryLabels[item.category] }}</td>
-          </ng-container>
-          <ng-container matColumnDef="unit">
-            <th mat-header-cell *matHeaderCellDef>Jed.</th>
-            <td mat-cell *matCellDef="let item">{{ item.unit }}</td>
-          </ng-container>
-          <ng-container matColumnDef="suggestedQty">
-            <th mat-header-cell *matHeaderCellDef>Zalecana il.</th>
-            <td mat-cell *matCellDef="let item">
-              @if (item.suggestedQty != null) { {{ item.suggestedQty }} }
-              @else { <span class="no-price">—</span> }
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="price">
-            <th mat-header-cell *matHeaderCellDef>Cena/szt</th>
-            <td mat-cell *matCellDef="let item">
-              @if (item.price != null) { {{ item.price | number:'1.2-2' }} zł }
-              @else { <span class="no-price">—</span> }
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="totalCost">
-            <th mat-header-cell *matHeaderCellDef>Łączny koszt</th>
-            <td mat-cell *matCellDef="let item">
-              @if (item.totalCost != null) { <strong>{{ item.totalCost | number:'1.2-2' }} zł</strong> }
-              @else { <span class="no-price">—</span> }
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="reason">
-            <th mat-header-cell *matHeaderCellDef>Powód</th>
-            <td mat-cell *matCellDef="let item">
+        <div class="badge-list">
+          @for (item of supplyBuyList(); track item.name) {
+            <div class="badge-card">
               @if (item.reason === 'zero') {
-                <mat-chip class="reason-zero">Stan: 0</mat-chip>
+                <span class="chip-reason reason-zero">Stan: 0</span>
               } @else {
-                <mat-chip class="reason-missing">Brak w zapasach</mat-chip>
+                <span class="chip-reason reason-missing">Brak</span>
               }
-            </td>
-          </ng-container>
-          <tr mat-header-row *matHeaderRowDef="supplyBuyColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: supplyBuyColumns;"></tr>
-        </table>
+              <div class="badge-main">
+                <span class="badge-title">{{ item.name }}</span>
+                <span class="badge-sub">{{ categoryLabels[item.category] }}
+                  @if (item.suggestedQty != null) { · zal. {{ item.suggestedQty }} {{ item.unit }} }
+                </span>
+              </div>
+              <div class="badge-cost">
+                @if (item.totalCost != null) {
+                  <strong>{{ item.totalCost | number:'1.2-2' }} zł</strong>
+                } @else if (item.price != null) {
+                  <span class="no-price">{{ item.price | number:'1.2-2' }} zł/szt</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
 
         @if (supplyTotalCost() != null) {
           <div class="total-cost-bar">
@@ -319,17 +273,36 @@ interface EquipBuyItem extends CatalogEquipmentItem {
     .cat-bar { margin-bottom: 6px; }
     .cat-detail { font-size: 0.75rem; color: #888; }
 
-    .shop-table { width: 100%; margin-bottom: 8px; }
-    td, th { padding: 8px 16px; }
     .no-price { color: #bbb; }
-    .overdue-days { font-weight: 700; color: #c62828; }
     .eq-link { margin-bottom: 16px; }
 
     .priority-high { background: #ffcdd2 !important; color: #c62828 !important; }
     .priority-medium { background: #ffe0b2 !important; color: #e65100 !important; }
     .priority-low { background: #f5f5f5 !important; color: #616161 !important; }
-    .reason-zero { background: #fff3e0 !important; color: #e65100 !important; }
-    .reason-missing { background: #fce4ec !important; color: #c62828 !important; }
+
+    .badge-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .badge-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 10px;
+      border: 1px solid #e0e0e0; background: #fafafa;
+    }
+    .badge-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+    .badge-title { font-size: 0.92rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .badge-sub { font-size: 0.76rem; color: #666; }
+    .badge-date { font-size: 0.73rem; color: #999; }
+    .badge-price { font-size: 0.88rem; font-weight: 600; color: #1565c0; white-space: nowrap; flex-shrink: 0; }
+    .badge-priority-chip { flex-shrink: 0; }
+    .badge-cost { flex-shrink: 0; text-align: right; font-size: 0.85rem; }
+
+    .overdue-chip {
+      flex-shrink: 0; padding: 2px 8px; border-radius: 12px;
+      background: #ffcdd2; color: #c62828; font-size: 0.78rem; font-weight: 700;
+    }
+    .chip-reason {
+      flex-shrink: 0; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;
+    }
+    .reason-zero { background: #fff3e0; color: #e65100; }
+    .reason-missing { background: #fce4ec; color: #c62828; }
 
     .total-cost-bar {
       display: flex; align-items: center; gap: 8px;
@@ -387,9 +360,6 @@ export class DashboardComponent implements OnInit {
   readonly categoryLabels: { [key: string]: string } = CATEGORY_LABELS;
   readonly equipCatLabels: { [key: string]: string } = EQUIPMENT_CATEGORY_LABELS;
   readonly priorityLabels: { [key: string]: string } = PRIORITY_LABELS;
-  readonly shopColumns = ['priority', 'category', 'gap', 'cost'];
-  readonly overdueColumns = ['equipment', 'task', 'due', 'overdue'];
-  readonly supplyBuyColumns = ['name', 'category', 'unit', 'suggestedQty', 'price', 'totalCost', 'reason'];
 
   ngOnInit() { this.load(); }
 
