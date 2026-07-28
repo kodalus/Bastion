@@ -17,7 +17,7 @@
 - **Target levels** — per-category norms, fully editable. Defaults: 72-hour EU minimum as the critical floor, 14-day horizon as the recommended target. Water: 3 L/person/day (2 L drinking per Polish RCB guideline + 1 L hygiene)
 - **Equipment + maintenance** — recurring tasks with interval tracking, overdue/due-soon detection, contribution to readiness score
 - **Emergency checklists** — scenario-based (power outage, evacuation, water shortage), interactive tick-off with reset
-- **Price tracking** — prices entered in the supply or equipment catalog persist in `localStorage`; inventory and dashboard fall back to these when no per-item price is stored
+- **Price tracking** — prices entered in the supply or equipment catalog persist in Dexie (IndexedDB); inventory and dashboard fall back to these when no per-item price is stored. Prices survive page reloads and tab switches on the same device/browser
 - **Email notifications** — daily digest of expiring supplies and overdue maintenance via MailHog (dev) or any SMTP
 
 ---
@@ -49,7 +49,7 @@ docker compose up
 
 Opens:
 - Frontend → http://localhost:4200
-- API + Swagger → http://localhost:5137/swagger
+- API + Swagger → http://localhost:8090/swagger
 - MailHog web UI → http://localhost:8025
 
 Database migrations and seed data run automatically on first start.
@@ -108,7 +108,7 @@ Household ──< Member
      ├──< Scenario ──< ChecklistItem
      └── (via StorageLocation) ──< SupplyItem
                                        │
-                                       └── CatalogItemName? ──> [static catalog]
+                                       └── CatalogItemName? ──> [Dexie supplyCatalog / PostgreSQL SupplyCatalog]
 ```
 
 `SupplyItem.CatalogItemName` is an optional reference to the canonical catalog entry (e.g. `"Makaron"`). It enables:
@@ -116,7 +116,7 @@ Household ──< Member
 - **Dashboard deduplication** — a supply linked to a catalog entry suppresses that entry from the "missing" list
 - **Auto-suggest on save** — the form dialog uses fuzzy keyword matching (`findCatalogMatch`) to pre-fill the field when the item name is close enough
 
-The static supply catalog (`SUPPLY_CATALOG` — 39 items) and equipment catalog live in the Angular frontend as typed constants (`frontend/src/app/core/data/`). Prices are persisted per item in `localStorage` so they survive page reloads without a backend round-trip.
+The supply catalog (39 items) and equipment catalog (23 items) are seeded into PostgreSQL on first start and mirrored into Dexie (`supplyCatalog` / `equipmentCatalog` tables) at app init. Prices are persisted per item in Dexie so they survive page reloads without a backend round-trip. The static TypeScript files (`frontend/src/app/core/data/`) are kept as offline seed fallback and for fuzzy name matching (`findCatalogMatch`) used by the inventory form.
 
 Supplies track `ExpiryDate`; expired items are excluded from the readiness calculation, expiring-soon items get a reduced weight. This mirrors CMMS planned-maintenance logic where overdue tasks degrade the equipment score.
 
@@ -169,8 +169,6 @@ MailHog captures outbound email at http://localhost:8025.
 ## Known limitations
 
 - **No authentication** — v1 is single-household, no login, no multi-tenancy. Auth is a planned future phase; the API is not safe to expose publicly.
-- **Prices in localStorage** — catalog prices are stored per browser, not in the database. Opening the app on a different device or browser resets all prices.
-- **Static catalogs** — the 39-item supply catalog and equipment catalog are typed constants in the frontend (`frontend/src/app/core/data/`), not database tables. Users cannot add catalog items without a code change.
 - **Backend not deployed** — the app runs locally via `docker compose up`. The Angular frontend is hosted on Vercel (offline-first, no backend required for the dashboard), but API-dependent pages (inventory CRUD, equipment) need the backend running.
 
 ---
