@@ -12,7 +12,7 @@
 |-----------|-----------|--------------|-----------------|
 | Readiness index, gap analysis, buy list with costs | Supply list, suggested qty, below-target highlight | 39 items with import, prices, per-row location | Recommended gear, have/missing, coverage score |
 
-> **Live demo:** run with `docker compose up` (see below) — seeds a realistic 4-person household.
+> **Live demo:** https://frontend-gilt-iota-29.vercel.app — seeds a realistic 4-person household on first load (offline-first, no backend required).
 
 ---
 
