@@ -320,7 +320,7 @@ public class ReadinessScoreTests
             [waterItem, foodItem], targets, memberCount: 4, Today);
 
         Assert.True(result.HasCriticalDeficit);
-        Assert.True(result.OverallScore > 60); // overall still high despite flag
+        Assert.True(result.OverallScore <= 60); // overall capped at 60 when critical deficit
     }
 
     [Fact]
@@ -340,6 +340,50 @@ public class ReadinessScoreTests
         var result = ReadinessScoreService.Calculate([], [], memberCount: 1, Today);
 
         Assert.False(result.HasCriticalDeficit);
+    }
+
+    [Fact]
+    public void CriticalDeficit_CapsOverallScore_At60()
+    {
+        // Water=100%, Food=100%, Medical=0% → uncapped weighted avg ≈ 75%,
+        // but critical deficit (Medical < 21%) must cap overall at 60.
+        var targets = new[]
+        {
+            MakeTarget(SupplyCategory.Water,   3m,   14),
+            MakeTarget(SupplyCategory.Food,    0.5m, 14),
+            MakeTarget(SupplyCategory.Medical, 1m,   14),
+        };
+        var waterItem = MakeItem(SupplyCategory.Water, 168m); // 100%
+        var foodItem  = MakeItem(SupplyCategory.Food,  28m);  // 100%
+        // No Medical items → Medical = 0%
+
+        var result = ReadinessScoreService.Calculate(
+            [waterItem, foodItem], targets, memberCount: 4, Today);
+
+        Assert.True(result.HasCriticalDeficit);
+        Assert.Equal(60, result.OverallScore);
+    }
+
+    [Fact]
+    public void CriticalDeficit_NoCapApplied_WhenAllHighAboveThreshold()
+    {
+        // All High-priority categories at 22% (above 21% threshold) → no cap.
+        // Weighted avg = 22% (all same score, all weights applied equally to High categories).
+        var targets = new[]
+        {
+            MakeTarget(SupplyCategory.Water,   3m,   14),
+            MakeTarget(SupplyCategory.Food,    0.5m, 14),
+            MakeTarget(SupplyCategory.Medical, 1m,   14),
+        };
+        var waterItem   = MakeItem(SupplyCategory.Water,   168m * 0.22m);
+        var foodItem    = MakeItem(SupplyCategory.Food,     28m * 0.22m);
+        var medicalItem = MakeItem(SupplyCategory.Medical,  56m * 0.22m);
+
+        var result = ReadinessScoreService.Calculate(
+            [waterItem, foodItem, medicalItem], targets, memberCount: 4, Today);
+
+        Assert.False(result.HasCriticalDeficit);
+        Assert.Equal(22, result.OverallScore); // no cap, score equals category scores
     }
 
     // --- Estimated cost ---

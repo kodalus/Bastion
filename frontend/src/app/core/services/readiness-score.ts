@@ -11,6 +11,9 @@ const EXPIRING_SOON_DAYS = 30;
 const EXPIRING_SOON_WEIGHT = 0.5;
 // 72 h / 14-day horizon ≈ 21 % — civil-defence minimum
 const CRITICAL_DEFICIT_THRESHOLD = 21;
+// When any High-priority category is below threshold, cap the overall score
+// so a critically under-supplied household can never appear "well prepared"
+const CRITICAL_DEFICIT_SCORE_CAP = 60;
 const HIGH_PRIORITY_CATEGORIES: SupplyCategory[] = ['Water', 'Food', 'Medical'];
 
 function todayStr(): string {
@@ -136,5 +139,9 @@ export function calculateReadiness(
     cs => HIGH_PRIORITY_CATEGORIES.includes(cs.category) && cs.score < CRITICAL_DEFICIT_THRESHOLD
   );
 
-  return { overallScore, memberCount, categoryScores, shoppingList, equipmentScore, overdueTasks, hasCriticalDeficit };
+  const cappedOverallScore = hasCriticalDeficit
+    ? Math.min(overallScore, CRITICAL_DEFICIT_SCORE_CAP)
+    : overallScore;
+
+  return { overallScore: cappedOverallScore, memberCount, categoryScores, shoppingList, equipmentScore, overdueTasks, hasCriticalDeficit };
 }
