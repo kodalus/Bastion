@@ -1,4 +1,6 @@
-import { db, LocationRecord, SupplyRecord, EquipmentRecord, MaintenanceTaskRecord, ScenarioRecord, ChecklistItemRecord, TargetLevelRecord } from './bastion-db';
+import { db, LocationRecord, SupplyRecord, EquipmentRecord, MaintenanceTaskRecord, ScenarioRecord, ChecklistItemRecord, TargetLevelRecord, SupplyCatalogRecord, EquipmentCatalogRecord } from './bastion-db';
+import { SUPPLY_CATALOG } from '../data/supply-catalog.data';
+import { EQUIPMENT_CATALOG } from '../data/equipment-catalog.data';
 
 function newId(): string { return crypto.randomUUID(); }
 
@@ -142,4 +144,32 @@ export async function seedIfEmpty(): Promise<void> {
     { id: newId(), scenarioId: s4, text: 'Sprawdź czytelność instrukcji pierwszej pomocy',                         sortOrder: 5,  isCompleted: false },
     { id: newId(), scenarioId: s4, text: 'Zaktualizuj listę leków alergicznych w rodzinie',                        sortOrder: 6,  isCompleted: false }
   ] as ChecklistItemRecord[]);
+}
+
+// Runs separately from seedIfEmpty() so existing users (with settings already set)
+// also get catalog tables seeded after the v2 schema upgrade.
+export async function seedCatalogIfEmpty(): Promise<void> {
+  const count = await db.supplyCatalog.count();
+  if (count > 0) return;
+
+  await db.supplyCatalog.bulkAdd(
+    SUPPLY_CATALOG.map(c => ({
+      name: c.name,
+      id: crypto.randomUUID(),
+      category: c.category,
+      unit: c.unit,
+      suggestedQty: c.suggestedQty,
+      price: null
+    } as SupplyCatalogRecord))
+  );
+
+  await db.equipmentCatalog.bulkAdd(
+    EQUIPMENT_CATALOG.map(c => ({
+      name: c.name,
+      id: crypto.randomUUID(),
+      category: c.category,
+      hint: c.hint,
+      price: null
+    } as EquipmentCatalogRecord))
+  );
 }

@@ -1,3 +1,4 @@
+using Bastion.Application.Catalog;
 using Bastion.Application.Dashboard;
 using Bastion.Application.Equipment;
 using Bastion.Application.Locations;
@@ -28,6 +29,7 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString));
 
+        services.AddScoped<ICatalogRepository, CatalogRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ISupplyRepository, SupplyRepository>();
         services.AddScoped<ITargetLevelRepository, TargetLevelRepository>();

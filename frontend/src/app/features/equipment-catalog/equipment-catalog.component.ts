@@ -10,7 +10,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { EquipmentService } from '../../core/services/equipment.service';
 import { EQUIPMENT_CATEGORY_LABELS, EquipmentCategory } from '../../core/models/equipment.model';
-import { CatalogEquipmentItem, EQUIPMENT_CATALOG } from '../../core/data/equipment-catalog.data';
+import { db, EquipmentCatalogRecord } from '../../core/db/bastion-db';
 
 const CATEGORY_ORDER: EquipmentCategory[] = [
   'FireExtinguisher', 'FirstAid', 'Generator', 'Communication', 'Filter', 'Tools', 'Vehicle', 'Other'
@@ -30,14 +30,14 @@ const CATEGORY_ORDER: EquipmentCategory[] = [
         <h1>Katalog sprzętu</h1>
         <p class="subtitle">
           Zalecany sprzęt kryzysowy. Zielony znacznik oznacza pozycję już w Twoim wykazie sprzętów.
-          Ceny są zapisywane lokalnie w przeglądarce.
+          Ceny są zapisywane lokalnie w przeglądarce (IndexedDB).
         </p>
       </div>
 
       @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
 
       <div class="summary-bar">
-        <span class="have">{{ haveCount() }} / {{ total }} masz</span>
+        <span class="have">{{ haveCount() }} / {{ catalog.length }} masz</span>
         @if (missingCount() > 0) {
           <span class="missing">{{ missingCount() }} do uzupełnienia</span>
         } @else {
@@ -68,12 +68,12 @@ const CATEGORY_ORDER: EquipmentCategory[] = [
                     <input
                       type="number"
                       class="price-input"
-                      [ngModel]="prices[item.name] ?? null"
+                      [ngModel]="item.price ?? null"
                       (ngModelChange)="savePrice(item.name, $event)"
                       placeholder="cena zł"
                       min="0"
                       step="0.01"
-                      [class.filled]="prices[item.name] != null"
+                      [class.filled]="item.price != null"
                     />
                   </div>
                   <div class="item-status">
@@ -164,27 +164,26 @@ const CATEGORY_ORDER: EquipmentCategory[] = [
 export class EquipmentCatalogComponent implements OnInit {
   private readonly equipmentSvc = inject(EquipmentService);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly PRICE_KEY = 'bastion:catalog:equipment:prices';
 
   readonly catLabels = EQUIPMENT_CATEGORY_LABELS;
   readonly categoryOrder = CATEGORY_ORDER;
-  readonly total = EQUIPMENT_CATALOG.length;
 
   readonly loading = signal(false);
   private readonly ownedNames = signal<Set<string>>(new Set());
   readonly adding = signal<Record<string, boolean>>({});
-  prices: Record<string, number | null> = {};
 
-  readonly haveCount = () => EQUIPMENT_CATALOG.filter(i => this.ownedNames().has(i.name.toLowerCase())).length;
-  readonly missingCount = () => this.total - this.haveCount();
+  catalog: EquipmentCatalogRecord[] = [];
 
-  get itemsByCategory(): Record<EquipmentCategory, CatalogEquipmentItem[]> {
-    const map: Partial<Record<EquipmentCategory, CatalogEquipmentItem[]>> = {};
-    for (const item of EQUIPMENT_CATALOG) {
+  readonly haveCount = () => this.catalog.filter(i => this.ownedNames().has(i.name.toLowerCase())).length;
+  readonly missingCount = () => this.catalog.length - this.haveCount();
+
+  get itemsByCategory(): Record<EquipmentCategory, EquipmentCatalogRecord[]> {
+    const map: Partial<Record<EquipmentCategory, EquipmentCatalogRecord[]>> = {};
+    for (const item of this.catalog) {
       if (!map[item.category]) map[item.category] = [];
       map[item.category]!.push(item);
     }
-    return map as Record<EquipmentCategory, CatalogEquipmentItem[]>;
+    return map as Record<EquipmentCategory, EquipmentCatalogRecord[]>;
   }
 
   owns(name: string): boolean {
@@ -199,26 +198,18 @@ export class EquipmentCatalogComponent implements OnInit {
     return (this.itemsByCategory[cat] ?? []).length;
   }
 
-  ngOnInit() {
-    this.loadSavedPrices();
-    this.load();
+  async ngOnInit() {
+    this.catalog = await db.equipmentCatalog.orderBy('category').toArray();
+    this.loadEquipment();
   }
 
-  savePrice(name: string, price: number | null) {
-    this.prices = { ...this.prices, [name]: price };
-    try {
-      localStorage.setItem(this.PRICE_KEY, JSON.stringify(this.prices));
-    } catch {}
+  async savePrice(name: string, price: number | null) {
+    await db.equipmentCatalog.update(name, { price });
+    const idx = this.catalog.findIndex(c => c.name === name);
+    if (idx !== -1) this.catalog[idx] = { ...this.catalog[idx], price };
   }
 
-  private loadSavedPrices() {
-    try {
-      const saved = localStorage.getItem(this.PRICE_KEY);
-      if (saved) this.prices = JSON.parse(saved);
-    } catch {}
-  }
-
-  add(item: CatalogEquipmentItem) {
+  add(item: EquipmentCatalogRecord) {
     this.adding.update(s => ({ ...s, [item.name]: true }));
     const today = new Date().toISOString().split('T')[0];
     this.equipmentSvc.create({ name: item.name, category: item.category, purchaseDate: today })
@@ -226,7 +217,7 @@ export class EquipmentCatalogComponent implements OnInit {
         next: () => {
           this.adding.update(s => ({ ...s, [item.name]: false }));
           this.snackBar.open(`Dodano: ${item.name}`, 'OK', { duration: 3000 });
-          this.load();
+          this.loadEquipment();
         },
         error: () => {
           this.adding.update(s => ({ ...s, [item.name]: false }));
@@ -235,7 +226,7 @@ export class EquipmentCatalogComponent implements OnInit {
       });
   }
 
-  private load() {
+  private loadEquipment() {
     this.loading.set(true);
     this.equipmentSvc.getAll().subscribe({
       next: items => {

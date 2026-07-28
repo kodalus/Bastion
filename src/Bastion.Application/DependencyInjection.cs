@@ -1,3 +1,4 @@
+using Bastion.Application.Catalog;
 using Bastion.Application.Dashboard;
 using Bastion.Application.Equipment;
 using Bastion.Application.Locations;
@@ -16,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<ITargetLevelService, TargetLevelService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IEquipmentService, EquipmentService>();
+        services.AddScoped<ICatalogService, CatalogService>();
         return services;
     }
 }

@@ -7,15 +7,14 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
-import { forkJoin } from 'rxjs';
+import { forkJoin, from } from 'rxjs';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { SupplyService } from '../../core/services/supply.service';
 import { EquipmentService } from '../../core/services/equipment.service';
 import { ReadinessResult, ShoppingListItem, ShoppingPriority } from '../../core/models/dashboard.model';
 import { CATEGORY_LABELS, SupplyCategory } from '../../core/models/supply.model';
-import { EQUIPMENT_CATEGORY_LABELS, EquipmentCategory } from '../../core/models/equipment.model';
-import { findCatalogMatch, SUPPLY_CATALOG } from '../../core/data/supply-catalog.data';
-import { CatalogEquipmentItem, EQUIPMENT_CATALOG } from '../../core/data/equipment-catalog.data';
+import { EQUIPMENT_CATEGORY_LABELS } from '../../core/models/equipment.model';
+import { db, SupplyCatalogRecord, EquipmentCatalogRecord } from '../../core/db/bastion-db';
 
 const PRIORITY_LABELS: Record<ShoppingPriority, string> = {
   High: 'Pilne',
@@ -31,10 +30,6 @@ interface SupplyBuyItem {
   suggestedQty: number | null;
   price: number | null;
   totalCost: number | null;
-}
-
-interface EquipBuyItem extends CatalogEquipmentItem {
-  price: number | null;
 }
 
 @Component({
@@ -90,7 +85,7 @@ interface EquipBuyItem extends CatalogEquipmentItem {
               <div class="score-label">Katalog sprzętu</div>
               <div class="score-value">{{ equipCatalogScore() }}<span class="score-pct">%</span></div>
               <div class="score-sub">
-                {{ equipCatalogHave() }} / {{ equipCatalogTotal }} pozycji
+                {{ equipCatalogHave() }} / {{ equipCatalogTotal() }} pozycji
               </div>
             </mat-card-content>
           </mat-card>
@@ -349,13 +344,17 @@ export class DashboardComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly supplyBuyList = signal<SupplyBuyItem[]>([]);
   readonly supplyTotalCost = signal<number | null>(null);
-  readonly equipmentBuyList = signal<EquipBuyItem[]>([]);
+  readonly equipmentBuyList = signal<EquipmentCatalogRecord[]>([]);
   readonly equipCatalogHave = signal(0);
-  readonly equipCatalogTotal = EQUIPMENT_CATALOG.length;
-  readonly equipCatalogScore = () =>
-    Math.round((this.equipCatalogHave() / this.equipCatalogTotal) * 100);
 
-  private supplyPrices: Record<string, number | null> = {};
+  private readonly equipCatalogTotalCount = signal(0);
+  readonly equipCatalogTotal = this.equipCatalogTotalCount;
+  readonly equipCatalogScore = () =>
+    this.equipCatalogTotalCount() > 0
+      ? Math.round((this.equipCatalogHave() / this.equipCatalogTotalCount()) * 100)
+      : 0;
+
+  private supplyCatalog: SupplyCatalogRecord[] = [];
 
   readonly categoryLabels: { [key: string]: string } = CATEGORY_LABELS;
   readonly equipCatLabels: { [key: string]: string } = EQUIPMENT_CATEGORY_LABELS;
@@ -367,16 +366,17 @@ export class DashboardComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    this.supplyPrices = this.readLocalPrices('bastion:catalog:supply:prices');
-    const equipmentPrices = this.readLocalPrices('bastion:catalog:equipment:prices');
-
     forkJoin({
       readiness: this.svc.getReadiness(),
       supplies: this.supplySvc.getAll(),
       equipment: this.equipmentSvc.getAll(),
+      supplyCatalog: from(db.supplyCatalog.orderBy('name').toArray()),
+      equipmentCatalog: from(db.equipmentCatalog.orderBy('name').toArray()),
     }).subscribe({
-      next: ({ readiness, supplies, equipment }) => {
+      next: ({ readiness, supplies, equipment, supplyCatalog, equipmentCatalog }) => {
+        this.supplyCatalog = supplyCatalog;
         this.result.set(readiness);
+        this.equipCatalogTotalCount.set(equipmentCatalog.length);
 
         const inventoryNames = new Set(supplies.map(s => s.name.toLowerCase()));
         const coveredCatalogNames = new Set(
@@ -389,8 +389,8 @@ export class DashboardComponent implements OnInit {
           .filter(s => s.quantity === 0)
           .map(s => {
             const key = s.catalogItemName ?? s.name;
-            const cat = findCatalogMatch(key);
-            const price = s.estimatedPricePerUnit ?? this.supplyPrices[key] ?? this.supplyPrices[s.name] ?? null;
+            const cat = this.findInCatalog(key) ?? this.findInCatalog(s.name);
+            const price = s.estimatedPricePerUnit ?? cat?.price ?? null;
             const suggestedQty = cat?.suggestedQty ?? null;
             return {
               name: s.name, category: s.category, unit: s.unit, reason: 'zero' as const,
@@ -399,19 +399,16 @@ export class DashboardComponent implements OnInit {
             };
           });
 
-        const missingItems: SupplyBuyItem[] = SUPPLY_CATALOG
+        const missingItems: SupplyBuyItem[] = supplyCatalog
           .filter(c => {
             const lower = c.name.toLowerCase();
             return !inventoryNames.has(lower) && !coveredCatalogNames.has(lower);
           })
-          .map(c => {
-            const price = this.supplyPrices[c.name] ?? null;
-            return {
-              name: c.name, category: c.category, unit: c.unit, reason: 'missing' as const,
-              suggestedQty: c.suggestedQty, price,
-              totalCost: price != null ? price * c.suggestedQty : null,
-            };
-          });
+          .map(c => ({
+            name: c.name, category: c.category, unit: c.unit, reason: 'missing' as const,
+            suggestedQty: c.suggestedQty, price: c.price,
+            totalCost: c.price != null ? c.price * c.suggestedQty : null,
+          }));
 
         this.supplyBuyList.set([...zeroItems, ...missingItems]);
         const total = [...zeroItems, ...missingItems]
@@ -419,11 +416,9 @@ export class DashboardComponent implements OnInit {
         this.supplyTotalCost.set(total > 0 ? total : null);
 
         const ownedNames = new Set(equipment.map(e => e.name.toLowerCase()));
-        const missing = EQUIPMENT_CATALOG.filter(c => !ownedNames.has(c.name.toLowerCase()));
-        this.equipCatalogHave.set(this.equipCatalogTotal - missing.length);
-        this.equipmentBuyList.set(
-          missing.map(c => ({ ...c, price: equipmentPrices[c.name] ?? null }))
-        );
+        const missingEquip = equipmentCatalog.filter(c => !ownedNames.has(c.name.toLowerCase()));
+        this.equipCatalogHave.set(equipmentCatalog.length - missingEquip.length);
+        this.equipmentBuyList.set(missingEquip);
 
         this.loading.set(false);
       },
@@ -431,20 +426,16 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  private readLocalPrices(key: string): Record<string, number | null> {
-    try {
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : {};
-    } catch { return {}; }
+  private findInCatalog(name: string): SupplyCatalogRecord | undefined {
+    const lower = name.toLowerCase();
+    return this.supplyCatalog.find(c => c.name.toLowerCase() === lower);
   }
 
   catalogCostFor(item: ShoppingListItem): number | null {
-    const matching = SUPPLY_CATALOG.filter(
+    const matching = this.supplyCatalog.filter(
       c => c.category === item.category && c.unit === item.unit
     );
-    const prices = matching
-      .map(c => this.supplyPrices[c.name])
-      .filter((p): p is number => p != null);
+    const prices = matching.map(c => c.price).filter((p): p is number => p != null);
     if (prices.length === 0) return item.estimatedCost ?? null;
     const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
     return Math.round(avgPrice * item.gap * 100) / 100;

@@ -65,9 +65,28 @@ export interface SettingRecord {
   value: string;
 }
 
+// Primary key is `name` (unique catalog item name).
+// `id` stores the server-side UUID for future API sync.
+export interface SupplyCatalogRecord {
+  name: string;
+  id: string;
+  category: SupplyCategory;
+  unit: string;
+  suggestedQty: number;
+  price: number | null;
+}
+
+export interface EquipmentCatalogRecord {
+  name: string;
+  id: string;
+  category: EquipmentCategory;
+  hint: string;
+  price: number | null;
+}
+
 // Bump this constant and add a version(N).stores().upgrade() block below
 // whenever the schema changes. Never edit an existing version() block.
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export class BastionDb extends Dexie {
   supplies!: Table<SupplyRecord>;
@@ -78,6 +97,8 @@ export class BastionDb extends Dexie {
   checklistItems!: Table<ChecklistItemRecord>;
   targetLevels!: Table<TargetLevelRecord>;
   settings!: Table<SettingRecord>;
+  supplyCatalog!: Table<SupplyCatalogRecord>;
+  equipmentCatalog!: Table<EquipmentCatalogRecord>;
 
   constructor() {
     super('BastionDb');
@@ -103,24 +124,21 @@ export class BastionDb extends Dexie {
       settings:         'key'
     });
 
-    // ── Template for next migration ──────────────────────────────────────────
-    // Example: v2 adds a 'weight' field to targetLevels (backlog item #6).
-    // Uncomment, set DB_VERSION = 2, update TargetLevelRecord interface.
-    //
-    // this.version(2).stores({
-    //   supplies:         'id, category, storageLocationId',
-    //   locations:        'id',
-    //   equipment:        'id',
-    //   maintenanceTasks: 'id, equipmentId',
-    //   scenarios:        'id',
-    //   checklistItems:   'id, scenarioId',
-    //   targetLevels:     'id, &category',
-    //   settings:         'key'
-    // }).upgrade(tx =>
-    //   tx.table('targetLevels').toCollection().modify((record: TargetLevelRecord) => {
-    //     if (record.weight === undefined) (record as any).weight = 1;
-    //   })
-    // );
+    // v2 — adds supplyCatalog and equipmentCatalog tables.
+    // Primary key for catalog tables is `name` (unique item name).
+    // No data migration needed — only new tables are added.
+    this.version(2).stores({
+      supplies:         'id, category, storageLocationId',
+      locations:        'id',
+      equipment:        'id',
+      maintenanceTasks: 'id, equipmentId',
+      scenarios:        'id',
+      checklistItems:   'id, scenarioId',
+      targetLevels:     'id, &category',
+      settings:         'key',
+      supplyCatalog:    'name, category',
+      equipmentCatalog: 'name, category'
+    });
   }
 }
 

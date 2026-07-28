@@ -1,3 +1,4 @@
+using Bastion.Domain.Aggregates.Catalog;
 using Bastion.Domain.Aggregates.Equipment;
 using Bastion.Domain.Aggregates.Households;
 using Bastion.Domain.Aggregates.Locations;
@@ -21,6 +22,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Scenario> Scenarios => Set<Scenario>();
     public DbSet<ChecklistItem> ChecklistItems => Set<ChecklistItem>();
+    public DbSet<SupplyCatalogItem> SupplyCatalog => Set<SupplyCatalogItem>();
+    public DbSet<EquipmentCatalogItem> EquipmentCatalog => Set<EquipmentCatalogItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

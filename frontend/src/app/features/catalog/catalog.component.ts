@@ -13,11 +13,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { SupplyService } from '../../core/services/supply.service';
 import { LocationService } from '../../core/services/location.service';
 import { CATEGORY_LABELS, StorageLocation, SupplyCategory } from '../../core/models/supply.model';
-import { CatalogSupplyItem, SUPPLY_CATALOG } from '../../core/data/supply-catalog.data';
+import { db, SupplyCatalogRecord } from '../../core/db/bastion-db';
 
-interface CatalogRow extends CatalogSupplyItem {
+interface CatalogRow extends SupplyCatalogRecord {
   qty: number | null;
-  price: number | null;
   locationId: string;
 }
 
@@ -248,8 +247,7 @@ export class CatalogComponent implements OnInit {
   readonly categoryOrder = CATEGORY_ORDER;
 
   defaultLocationIds: Partial<Record<SupplyCategory, string>> = {};
-
-  rows: CatalogRow[] = SUPPLY_CATALOG.map(item => ({ ...item, qty: null, price: null, locationId: '' }));
+  rows: CatalogRow[] = [];
 
   get importCount(): number {
     return this.rows.filter(r => r.qty !== null && r.locationId).length;
@@ -268,31 +266,14 @@ export class CatalogComponent implements OnInit {
     return map as Record<SupplyCategory, CatalogRow[]>;
   }
 
-  private readonly PRICE_KEY = 'bastion:catalog:supply:prices';
-
-  ngOnInit() {
+  async ngOnInit() {
     this.locationSvc.getAll().subscribe(locs => this.locations.set(locs));
-    this.loadSavedPrices();
+    const catalog = await db.supplyCatalog.orderBy('category').toArray();
+    this.rows = catalog.map(item => ({ ...item, qty: null, locationId: '' }));
   }
 
-  private loadSavedPrices() {
-    try {
-      const saved = localStorage.getItem(this.PRICE_KEY);
-      if (!saved) return;
-      const prices: Record<string, number | null> = JSON.parse(saved);
-      for (const row of this.rows) {
-        if (row.name in prices) row.price = prices[row.name];
-      }
-    } catch {}
-  }
-
-  savePrice(name: string, price: number | null) {
-    try {
-      const saved = localStorage.getItem(this.PRICE_KEY);
-      const prices: Record<string, number | null> = saved ? JSON.parse(saved) : {};
-      prices[name] = price;
-      localStorage.setItem(this.PRICE_KEY, JSON.stringify(prices));
-    } catch {}
+  async savePrice(name: string, price: number | null) {
+    await db.supplyCatalog.update(name, { price });
   }
 
   applyDefaultLocation(cat: SupplyCategory, locId: string) {

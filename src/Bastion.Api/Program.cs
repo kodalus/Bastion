@@ -41,6 +41,7 @@ app.MapTargetEndpoints();
 app.MapDashboardEndpoints();
 app.MapEquipmentEndpoints();
 app.MapScenarioEndpoints();
+app.MapCatalogEndpoints();
 
 if (app.Environment.IsDevelopment())
     app.MapDevEndpoints();

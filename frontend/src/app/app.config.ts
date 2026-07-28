@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 import { routes } from './app.routes';
-import { seedIfEmpty } from './core/db/seed';
+import { seedIfEmpty, seedCatalogIfEmpty } from './core/db/seed';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -11,7 +11,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     {
       provide: APP_INITIALIZER,
-      useFactory: () => () => seedIfEmpty(),
+      useFactory: () => () => seedIfEmpty().then(() => seedCatalogIfEmpty()),
       multi: true
     }
   ]
