@@ -14,5 +14,8 @@ public class SupplyItemConfiguration : IEntityTypeConfiguration<SupplyItem>
         builder.Property(s => s.Quantity).IsRequired().HasPrecision(12, 3);
         builder.Property(s => s.Unit).IsRequired().HasMaxLength(50);
         builder.Property(s => s.EstimatedPricePerUnit).HasPrecision(12, 2);
+
+        builder.HasIndex(s => s.StorageLocationId);
+        builder.HasIndex(s => s.ExpiryDate);
     }
 }
