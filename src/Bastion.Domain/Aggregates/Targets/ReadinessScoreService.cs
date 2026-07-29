@@ -8,11 +8,8 @@ public static class ReadinessScoreService
     private const int ExpiringSoonDays = 30;
     private const decimal ExpiringSoonWeight = 0.5m;
     private const decimal EquipmentWeight = 2m;
-    // 72 h / (14-day horizon) ≈ 21 % — minimum from civil-defence norms
+    // 72 h / (14-day horizon × 24 h) ≈ 21 % — civil-defence 72-hour minimum
     private const int CriticalDeficitThreshold = 21;
-    // When any High-priority category is below the threshold, cap the overall score so
-    // that a critically under-supplied household can never appear "well prepared"
-    private const int CriticalDeficitScoreCap = 60;
 
     // Overload without maintenance tasks — existing callers and tests unchanged
     public static ReadinessResult Calculate(
@@ -101,11 +98,17 @@ public static class ReadinessScoreService
             ? equipmentScore
             : (int)Math.Round(weightedSum / totalWeight, MidpointRounding.AwayFromZero);
 
-        var hasCriticalDeficit = categoryScores.Any(
-            cs => GetPriority(cs.Category) == ShoppingPriority.High && cs.Score < CriticalDeficitThreshold);
+        var worstCriticalScore = categoryScores
+            .Where(cs => GetPriority(cs.Category) == ShoppingPriority.High)
+            .Select(cs => cs.Score)
+            .DefaultIfEmpty(100)
+            .Min();
 
+        var hasCriticalDeficit = worstCriticalScore < CriticalDeficitThreshold;
+
+        // Overall readiness cannot exceed the weakest critical link
         if (hasCriticalDeficit)
-            overallScore = Math.Min(overallScore, CriticalDeficitScoreCap);
+            overallScore = Math.Min(overallScore, worstCriticalScore);
 
         var sortedShoppingList = shoppingList
             .OrderBy(i => (int)i.Priority)

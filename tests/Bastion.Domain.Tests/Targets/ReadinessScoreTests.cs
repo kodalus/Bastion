@@ -320,7 +320,7 @@ public class ReadinessScoreTests
             [waterItem, foodItem], targets, memberCount: 4, Today);
 
         Assert.True(result.HasCriticalDeficit);
-        Assert.True(result.OverallScore <= 60); // overall capped at 60 when critical deficit
+        Assert.Equal(0, result.OverallScore); // overall capped at worstCriticalScore (Medical=0%)
     }
 
     [Fact]
@@ -343,10 +343,10 @@ public class ReadinessScoreTests
     }
 
     [Fact]
-    public void CriticalDeficit_CapsOverallScore_At60()
+    public void CriticalDeficit_ZeroMedical_CapsOverallScoreAtZero()
     {
-        // Water=100%, Food=100%, Medical=0% → uncapped weighted avg ≈ 75%,
-        // but critical deficit (Medical < 21%) must cap overall at 60.
+        // Water=100%, Food=100%, Medical=0% → uncapped weighted avg ≈ 79%,
+        // but cap = worstCriticalScore = 0, so overall must be 0.
         var targets = new[]
         {
             MakeTarget(SupplyCategory.Water,   3m,   14),
@@ -361,7 +361,30 @@ public class ReadinessScoreTests
             [waterItem, foodItem], targets, memberCount: 4, Today);
 
         Assert.True(result.HasCriticalDeficit);
-        Assert.Equal(60, result.OverallScore);
+        Assert.Equal(0, result.OverallScore);
+    }
+
+    [Fact]
+    public void CriticalDeficit_PartialMedical_CapsAtMedicalScore_NotArbitraryFloor()
+    {
+        // Water=100%, Food=100%, Medical=15% → worstCriticalScore=15 → overall capped at 15.
+        // Verifies the cap scales with severity rather than using a flat 60 floor.
+        var targets = new[]
+        {
+            MakeTarget(SupplyCategory.Water,   3m,   14),
+            MakeTarget(SupplyCategory.Food,    0.5m, 14),
+            MakeTarget(SupplyCategory.Medical, 1m,   14),
+        };
+        // Medical required: 1 × 14 × 4 = 56. 15% of 56 = 8.4
+        var waterItem   = MakeItem(SupplyCategory.Water,   168m);
+        var foodItem    = MakeItem(SupplyCategory.Food,    28m);
+        var medicalItem = MakeItem(SupplyCategory.Medical, 56m * 0.15m); // 8.4 → score 15%
+
+        var result = ReadinessScoreService.Calculate(
+            [waterItem, foodItem, medicalItem], targets, memberCount: 4, Today);
+
+        Assert.True(result.HasCriticalDeficit);
+        Assert.Equal(15, result.OverallScore); // capped at worstCriticalScore=15, not 60
     }
 
     [Fact]
