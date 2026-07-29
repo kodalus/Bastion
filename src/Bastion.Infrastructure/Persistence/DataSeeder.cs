@@ -48,6 +48,9 @@ public static class DataSeeder
             {
                 TargetLevel.Create(household.Id, SupplyCategory.Water,     3m,    14, "L"),
                 TargetLevel.Create(household.Id, SupplyCategory.Food,      0.5m,  14, "kg"),
+                // qppd=1/14 is a calibration: "1 kit per person total" expressed over 14 days
+                // so the 72-hour gate fires when stock drops below ~1 kit, consistent with Water/Food.
+                // Medical is not physically consumed at 1/14 kit/day — this is a model assumption.
                 TargetLevel.Create(household.Id, SupplyCategory.Medical,   1m/14m, 14, "szt"),
                 TargetLevel.Create(household.Id, SupplyCategory.Hygiene,   0.05m, 14, "kg"),
                 TargetLevel.Create(household.Id, SupplyCategory.Energy,    0.5m,  14, "szt"),

@@ -544,4 +544,30 @@ public class ReadinessScoreTests
         Assert.Equal(0, result.EquipmentScore);
         Assert.Equal(60, result.OverallScore);
     }
+
+    // --- Seeder contract ---
+    // Verifies that seed parameters for every High-priority consumable category
+    // yield ≥ 72 h of autonomy at full stock. Catches the whole class of seeder
+    // misconfiguration (e.g. horizon=1 makes 100% stock = 24 h — always critical).
+    // Keep these InlineData values in sync with DataSeeder.cs and seed.ts.
+
+    [Theory]
+    [InlineData(SupplyCategory.Water,   3.0,          14)]
+    [InlineData(SupplyCategory.Food,    0.5,          14)]
+    [InlineData(SupplyCategory.Medical, 1.0 / 14.0,   14)]
+    public void SeedTarget_HighPriority_AtFullStock_HasAtLeast72hAutonomy(
+        SupplyCategory category, double qppdDouble, int horizonDays)
+    {
+        var qppd = (decimal)qppdDouble;
+        const int memberCount = 4;
+        var target = TargetLevel.Create(HouseholdId, category, qppd, horizonDays, "unit");
+        var required = target.RequiredTotal(memberCount);
+        var dailyForHousehold = target.QuantityPerPersonPerDay * memberCount;
+
+        // autonomyHours = available ÷ (qppd × members) × 24; at full stock available == required
+        var autonomyHours = dailyForHousehold > 0 ? required / dailyForHousehold * 24m : decimal.MaxValue;
+
+        Assert.True(autonomyHours >= 72m,
+            $"{category}: {autonomyHours:F1} h autonomy at full stock — seeder params violate the 72-hour gate");
+    }
 }
