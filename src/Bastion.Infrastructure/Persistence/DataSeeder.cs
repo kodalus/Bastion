@@ -48,7 +48,7 @@ public static class DataSeeder
             {
                 TargetLevel.Create(household.Id, SupplyCategory.Water,     3m,    14, "L"),
                 TargetLevel.Create(household.Id, SupplyCategory.Food,      0.5m,  14, "kg"),
-                TargetLevel.Create(household.Id, SupplyCategory.Medical,   1m,    1,  "szt"),
+                TargetLevel.Create(household.Id, SupplyCategory.Medical,   1m/14m, 14, "szt"),
                 TargetLevel.Create(household.Id, SupplyCategory.Hygiene,   0.05m, 14, "kg"),
                 TargetLevel.Create(household.Id, SupplyCategory.Energy,    0.5m,  14, "szt"),
                 TargetLevel.Create(household.Id, SupplyCategory.Tools,     1m,    1,  "szt"),

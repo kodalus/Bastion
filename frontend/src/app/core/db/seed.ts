@@ -23,7 +23,7 @@ export async function seedIfEmpty(): Promise<void> {
   await db.targetLevels.bulkAdd([
     { id: newId(), category: 'Water',     quantityPerPersonPerDay: 3,    horizonDays: 14, unit: 'L',    isConsumable: true,  weight: 3   },
     { id: newId(), category: 'Food',      quantityPerPersonPerDay: 0.5,  horizonDays: 14, unit: 'kg',   isConsumable: true,  weight: 3   },
-    { id: newId(), category: 'Medical',   quantityPerPersonPerDay: 1,    horizonDays: 1,  unit: 'szt',  isConsumable: true,  weight: 2   },
+    { id: newId(), category: 'Medical',   quantityPerPersonPerDay: 1/14, horizonDays: 14, unit: 'szt',  isConsumable: true,  weight: 2   },
     { id: newId(), category: 'Hygiene',   quantityPerPersonPerDay: 0.05, horizonDays: 14, unit: 'kg',   isConsumable: true,  weight: 1   },
     { id: newId(), category: 'Energy',    quantityPerPersonPerDay: 0.5,  horizonDays: 14, unit: 'szt',  isConsumable: true,  weight: 1   },
     { id: newId(), category: 'Tools',     quantityPerPersonPerDay: 1,    horizonDays: 1,  unit: 'szt',  isConsumable: false, weight: 0.5 },

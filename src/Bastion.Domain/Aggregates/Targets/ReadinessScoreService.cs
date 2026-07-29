@@ -8,8 +8,8 @@ public static class ReadinessScoreService
     private const int ExpiringSoonDays = 30;
     private const decimal ExpiringSoonWeight = 0.5m;
     private const decimal EquipmentWeight = 2m;
-    // 72 h / (14-day horizon × 24 h) ≈ 21 % — civil-defence 72-hour minimum
-    private const int CriticalDeficitThreshold = 21;
+    // EU/PL civil-defence preparedness standard (72-hour self-sufficiency)
+    private const int CivilDefenceMinimumHours = 72;
 
     // Overload without maintenance tasks — existing callers and tests unchanged
     public static ReadinessResult Calculate(
@@ -31,6 +31,7 @@ public static class ReadinessScoreService
 
         var categoryScores = new List<CategoryScore>();
         var shoppingList = new List<ShoppingListItem>();
+        var worstAutonomyHours = decimal.MaxValue;
 
         foreach (var target in targets)
         {
@@ -61,6 +62,14 @@ public static class ReadinessScoreService
                     : available >= required ? 100 : 0;
 
             categoryScores.Add(new CategoryScore(target.Category, score, available, required, target.Unit));
+
+            // autonomy = available ÷ (daily rate × members) × 24 h; horizonDays cancels out
+            if (target.IsConsumable && GetPriority(target.Category) == ShoppingPriority.High)
+            {
+                var dailyForHousehold = target.QuantityPerPersonPerDay * memberCount;
+                var autonomy = dailyForHousehold > 0 ? available / dailyForHousehold * 24m : decimal.MaxValue;
+                if (autonomy < worstAutonomyHours) worstAutonomyHours = autonomy;
+            }
 
             if (score < 100)
             {
@@ -104,7 +113,7 @@ public static class ReadinessScoreService
             .DefaultIfEmpty(100)
             .Min();
 
-        var hasCriticalDeficit = worstCriticalScore < CriticalDeficitThreshold;
+        var hasCriticalDeficit = worstAutonomyHours < CivilDefenceMinimumHours;
 
         // Overall readiness cannot exceed the weakest critical link
         if (hasCriticalDeficit)
