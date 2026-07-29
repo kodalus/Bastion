@@ -8,7 +8,7 @@
 
 ## Features
 
-- **Readiness index (0–100%)** — weighted score across all supply categories + equipment maintenance, updated on every dashboard load
+- **Readiness index (0–100%)** — weighted score across all supply categories + equipment maintenance, updated on every dashboard load. A critical-deficit gate caps the overall score at the weakest High-priority category (Water/Food/Medical) whenever any of them provides less than 72 hours of autonomy — the EU/PL civil-defence preparedness standard
 - **Gap analysis + shopping list** — what's missing vs. targets with priority, estimated cost per item, and total budget to reach 100%
 - **Supply catalog** — reference list of 39 recommended items (water, food, medical, hygiene, energy, tools, documents) with suggested quantities per 4-person household; one-click bulk import to inventory with per-row location and price; deduplicates on re-import
 - **Equipment catalog** — recommended emergency gear (fire extinguisher, generator, radio, filters, tools…); tracks what you own vs. what's missing; equipment coverage score card on the dashboard
@@ -84,7 +84,7 @@ Bastion.sln
 │   └── Bastion.Api             # Minimal API endpoints, DI wiring, seeder
 ├── frontend/                   # Angular 17 standalone app
 ├── tests/
-│   ├── Bastion.Domain.Tests           # 42 unit tests (ReadinessScore, supply/equipment logic)
+│   ├── Bastion.Domain.Tests           # 46 unit tests (ReadinessScore, supply/equipment logic, seeder contracts)
 │   ├── Bastion.Application.Tests
 │   └── Bastion.Api.IntegrationTests   # Testcontainers — real PostgreSQL per test run
 └── docker-compose.yml
@@ -92,7 +92,7 @@ Bastion.sln
 
 **Key design decisions:**
 
-- `ReadinessScore` is a pure, stateless function in the domain layer — no I/O, fully unit-tested. Score = weighted average across supply categories (water and food weighted higher) + equipment score (fraction of on-time maintenance tasks).
+- `ReadinessScore` is a pure, stateless function in the domain layer — no I/O, fully unit-tested. Score = weighted average across supply categories (water and food weighted higher) + equipment score (fraction of on-time maintenance tasks). A critical-deficit gate clamps the overall score to `min(overall, worstCriticalScore)` when any High-priority consumable category has less than 72 hours of autonomy (`available ÷ (qppd × members) × 24 h`). The threshold is horizon-independent: planning horizon cancels out algebraically.
 - Domain entities use factory methods (`Equipment.Create(...)`) and expose state only through deliberate operations (`task.Complete(date)`), not public setters.
 - Quartz.NET jobs decouple notification creation from dispatch: `ExpiryScanJob` + `MaintenanceDueJob` write `Notification` records; `NotificationDispatchJob` sends them. Deduplication via `ExistsForDateAsync` prevents duplicate digests.
 
